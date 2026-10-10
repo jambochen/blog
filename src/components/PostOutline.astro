@@ -12,14 +12,21 @@ const headings = Astro.props.headings.filter(({ depth }) => depth === 2 || depth
 	headings.length > 1 && (
 		<>
 			<nav class="outline outline-side" aria-label="本文大綱">
-				<p class="outline-title">大綱</p>
-				<ol>
-					{headings.map(({ depth, slug, text }) => (
-						<li class={`depth-${depth}`}>
-							<a href={`#${slug}`}>{text}</a>
-						</li>
+				<div class="outline-rail" aria-hidden="true">
+					{headings.map(({ depth }) => (
+						<span class={`depth-${depth}`} />
 					))}
-				</ol>
+				</div>
+				<div class="outline-panel">
+					<p class="outline-title">大綱</p>
+					<ol>
+						{headings.map(({ depth, slug, text }) => (
+							<li class={`depth-${depth}`}>
+								<a href={`#${slug}`}>{text}</a>
+							</li>
+						))}
+					</ol>
+				</div>
 			</nav>
 
 			<details class="outline outline-inline">
@@ -43,6 +50,10 @@ const headings = Astro.props.headings.filter(({ depth }) => depth === 2 || depth
 		.filter((target) => target !== null);
 
 	if (targets.length > 0) {
+		const items = links.map((link) => link.parentElement!);
+		const ticks = [...document.querySelectorAll('.outline-rail span')];
+		// Subsections are hidden by CSS only once this is set, so the full outline stays visible without script.
+		document.querySelector<HTMLElement>('.outline-side')!.dataset.collapsible = '';
 		// A heading counts as current once it has scrolled into the top part of the viewport.
 		const READING_LINE = 120;
 		let queued = false;
@@ -56,6 +67,17 @@ const headings = Astro.props.headings.filter(({ depth }) => depth === 2 || depth
 			links.forEach((link, index) => {
 				if (index === current) link.setAttribute('aria-current', 'location');
 				else link.removeAttribute('aria-current');
+				ticks[index].toggleAttribute('data-current', index === current);
+			});
+
+			// Only the section being read shows its subsections.
+			const isSection = (index: number) => items[index].classList.contains('depth-2');
+			let start = current;
+			while (start > 0 && !isSection(start)) start--;
+			let end = start + 1;
+			while (end < items.length && !isSection(end)) end++;
+			items.forEach((item, index) => {
+				item.toggleAttribute('data-open', current >= 0 && index > start && index < end);
 			});
 		};
 
@@ -93,18 +115,84 @@ const headings = Astro.props.headings.filter(({ depth }) => depth === 2 || depth
 		padding-left: 1rem;
 	}
 
+	/* Only the rail is in flow, so the panel opens when the pointer reaches the rail, not anywhere in the empty column. */
 	.outline-side {
 		position: sticky;
 		top: 2rem;
+		width: fit-content;
+		margin-left: auto;
+	}
+	.outline-rail {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.55rem;
+		padding: 0.5rem 0 0.5rem 1rem;
+	}
+	.outline-rail span {
+		width: 1.25rem;
+		height: 2px;
+		background: color-mix(in srgb, var(--muted) 55%, var(--paper));
+	}
+	.outline-rail .depth-3 {
+		width: 0.7rem;
+	}
+	.outline-rail [data-current] {
+		background: var(--violet);
+	}
+	.outline-panel {
+		position: absolute;
+		top: 0;
+		right: 0;
+		/* The width of the column BlogPost reserves beside the text, so the open panel never covers it. */
+		width: 13rem;
 		max-height: calc(100vh - 4rem);
 		overflow-y: auto;
-		padding-left: 1rem;
+		padding: 0.5rem 0 0.5rem 1rem;
 		border-left: 1px solid var(--rule);
+		background: var(--paper);
+		/* Not `visibility: hidden`, so the links stay reachable by keyboard and focusing one opens the panel. */
+		opacity: 0;
+		pointer-events: none;
+		transform: translateX(0.75rem);
+		transition:
+			opacity 0.2s ease,
+			transform 0.2s ease;
+	}
+	.outline-side:hover .outline-panel,
+	.outline-side:focus-within .outline-panel {
+		opacity: 1;
+		pointer-events: auto;
+		transform: none;
 	}
 	.outline-title {
 		margin: 0 0 0.5rem;
 		font-family: var(--font-mincho);
 		font-weight: 900;
+	}
+	.outline-side[data-collapsible] li.depth-3 {
+		max-height: 0;
+		overflow: hidden;
+		opacity: 0;
+		/* Keeps collapsed links out of the tab order; delayed on closing so the fade can finish. */
+		visibility: hidden;
+		transition:
+			max-height 0.25s ease,
+			opacity 0.25s ease,
+			visibility 0s 0.25s;
+	}
+	.outline-side[data-collapsible] li.depth-3[data-open] {
+		/* Room for a title that wraps onto three lines. */
+		max-height: 6rem;
+		opacity: 1;
+		visibility: visible;
+		transition-delay: 0s;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.outline-side .depth-3,
+		.outline-panel {
+			transition: none !important;
+		}
 	}
 	.outline-side a[aria-current] {
 		color: var(--violet);

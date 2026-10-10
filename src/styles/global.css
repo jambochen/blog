@@ -9,7 +9,7 @@
 	--bar: #000;
 	--bar-ink: #f4f4ef;
 
-	--measure: 40rem;
+	--measure: 42rem;
 	--gutter: clamp(1.25rem, 5vw, 4rem);
 	color-scheme: light;
 }
@@ -55,7 +55,7 @@ main {
 
 .wrap {
 	width: 100%;
-	max-width: 68rem;
+	max-width: 66rem;
 	margin-inline: auto;
 	padding-inline: var(--gutter);
 }
