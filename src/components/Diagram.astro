@@ -1,0 +1,74 @@
+---
+import { themeDiagram } from '../lib/diagram';
+
+interface Props {
+	// Raw text of the figure file, imported with `?raw`.
+	source: string;
+	alt: string;
+}
+
+const { source, alt } = Astro.props;
+---
+
+<figure class="diagram">
+	<button type="button" class="diagram-open" title="點擊放大">
+		<Fragment set:html={themeDiagram(source, alt)} />
+	</button>
+	<dialog class="diagram-zoom" aria-label={alt}></dialog>
+</figure>
+
+<style>
+	.diagram {
+		--diagram-accent: #eb6c36;
+		--diagram-raised: #fff;
+		margin-inline: 0;
+	}
+	:global([data-theme='dark']) .diagram {
+		--diagram-raised: var(--surface);
+	}
+	.diagram :global(svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.diagram-open {
+		all: unset;
+		display: block;
+		width: 100%;
+		cursor: zoom-in;
+	}
+	.diagram-open:focus-visible {
+		outline: 2px solid var(--violet);
+		outline-offset: 4px;
+	}
+	/* The figures are drawn 960 units wide with 12-unit text, which the text column shrinks;
+	   the dialog shows them at drawn size and scrolls sideways on screens narrower than that. */
+	.diagram-zoom {
+		width: min(64rem, 100vw - 2rem);
+		max-width: none;
+		max-height: calc(100vh - 2rem);
+		padding: 1rem;
+		border: 1px solid var(--rule);
+		background: var(--paper);
+		overflow: auto;
+		cursor: zoom-out;
+	}
+	.diagram-zoom::backdrop {
+		background: rgb(0 0 0 / 0.6);
+	}
+	.diagram-zoom :global(svg) {
+		min-width: 60rem;
+	}
+</style>
+
+<script>
+	for (const figure of document.querySelectorAll<HTMLElement>('.diagram')) {
+		const dialog = figure.querySelector('dialog')!;
+		figure.querySelector('.diagram-open')!.addEventListener('click', () => {
+			// Copied on first use, so the page does not carry every figure twice.
+			if (!dialog.firstChild) dialog.append(figure.querySelector('svg')!.cloneNode(true));
+			dialog.showModal();
+		});
+		dialog.addEventListener('click', () => dialog.close());
+	}
+</script>
