@@ -1,112 +1,83 @@
 ---
-import { Image } from 'astro:assets';
-import { getCollection } from 'astro:content';
-import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
-import Header from '../../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import EpisodeList from '../../components/EpisodeList.astro';
+import { SITE_TITLE } from '../../consts';
+import Base from '../../layouts/Base.astro';
+import { type Episode, getEpisodes, groupSeries } from '../../lib/posts';
 
-const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+const episodes = (await getEpisodes()).reverse();
+const allSeries = groupSeries(episodes);
+
+const byYear = new Map<number, Episode[]>();
+for (const episode of episodes) {
+	const year = episode.post.data.pubDate.getUTCFullYear();
+	byYear.set(year, [...(byYear.get(year) ?? []), episode]);
+}
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			main {
-				width: 960px;
-			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section>
-				<ul>
-					{posts.map((post) => (
-						<li>
-							<a href={`/blog/${post.id}/`}>
-								{post.data.heroImage && (
-									<Image width={720} height={360} src={post.data.heroImage} alt="" />
-								)}
-								<h4 class="title">{post.data.title}</h4>
-								<p class="date">
-									<FormattedDate date={post.data.pubDate} />
-								</p>
-							</a>
-						</li>
-					))}
-				</ul>
-			</section>
-		</main>
-		<Footer />
-	</body>
-</html>
+<Base title={`文章 | ${SITE_TITLE}`} description={`全部 ${episodes.length} 篇文章，依年份排列。`}>
+	<div class="wrap page">
+		<h1>文章</h1>
+		{
+			episodes.length === 0 && (
+				<p>
+					還沒有文章。在 <code>src/content/blog/</code> 新增一個 Markdown 檔就會出現在這裡。
+				</p>
+			)
+		}
+		{
+			allSeries.length > 0 && (
+				<section>
+					<h2 class="heading">系列</h2>
+					<ul class="series">
+						{allSeries.map((series) => (
+							<li>
+								<a href={`/series/${series.slug}/`}>{series.name}</a>
+								<span class="count">共 {series.episodes.length} 篇</span>
+							</li>
+						))}
+					</ul>
+				</section>
+			)
+		}
+		{
+			[...byYear].map(([year, yearEpisodes]) => (
+				<section>
+					<h2 class="heading year">{year}</h2>
+					<EpisodeList episodes={yearEpisodes} />
+				</section>
+			))
+		}
+	</div>
+</Base>
+
+<style>
+	.heading {
+		margin: 3rem 0 0.75rem;
+		font-family: var(--font-mincho);
+		font-weight: 900;
+		font-size: 1.563rem;
+		line-height: 1.2;
+	}
+	.year {
+		font-family: var(--font-ui), sans-serif;
+		font-weight: 600;
+	}
+	.series {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 2.5rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.series a {
+		font-family: var(--font-mincho);
+		font-weight: 700;
+		font-size: 1.25rem;
+	}
+	.count {
+		margin-left: 0.5rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+</style>

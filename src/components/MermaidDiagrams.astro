@@ -1,0 +1,43 @@
+<script>
+	const diagrams = [...document.querySelectorAll<HTMLElement>('pre.mermaid')];
+
+	// Mermaid is large, so it is only fetched on pages that contain a diagram.
+	if (diagrams.length > 0) {
+		const { default: mermaid } = await import('mermaid');
+		const root = document.documentElement;
+
+		for (const diagram of diagrams) {
+			diagram.dataset.source = diagram.textContent ?? '';
+		}
+
+		const render = async () => {
+			const token = (name: string) => getComputedStyle(root).getPropertyValue(name).trim();
+			mermaid.initialize({
+				startOnLoad: false,
+				theme: 'base',
+				themeVariables: {
+					darkMode: root.dataset.theme === 'dark',
+					background: token('--paper'),
+					primaryColor: token('--surface'),
+					primaryTextColor: token('--ink'),
+					primaryBorderColor: token('--muted'),
+					secondaryColor: token('--paper'),
+					tertiaryColor: token('--paper'),
+					lineColor: token('--muted'),
+					edgeLabelBackground: token('--paper'),
+					textColor: token('--ink'),
+					fontFamily: getComputedStyle(document.body).fontFamily,
+				},
+			});
+			for (const diagram of diagrams) {
+				// Mermaid skips elements it has already drawn, so a re-render has to start from the source again.
+				diagram.removeAttribute('data-processed');
+				diagram.textContent = diagram.dataset.source ?? '';
+			}
+			await mermaid.run({ nodes: diagrams });
+		};
+
+		await render();
+		new MutationObserver(render).observe(root, { attributeFilter: ['data-theme'] });
+	}
+</script>

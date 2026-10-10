@@ -1,0 +1,73 @@
+---
+import { type Episode, seriesPositionLabel } from '../lib/posts';
+import FormattedDate from './FormattedDate.astro';
+
+interface Props {
+	episodes: Episode[];
+	showSeries?: boolean;
+}
+
+const { episodes, showSeries = true } = Astro.props;
+---
+
+<ol class="episodes">
+	{
+		episodes.map(({ post, series }) => (
+			<li>
+				<a href={`/blog/${post.id}/`}>
+					<span class="text">
+						{series && (
+							<span class="series">
+								{showSeries ? `${series.name}　${seriesPositionLabel(series)}` : `第 ${series.number} 篇`}
+							</span>
+						)}
+						<span class="title">{post.data.title}</span>
+						<span class="description">{post.data.description}</span>
+					</span>
+					<FormattedDate date={post.data.pubDate} />
+				</a>
+			</li>
+		))
+	}
+</ol>
+
+<style>
+	.episodes {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		border-bottom: 1px solid var(--rule);
+	}
+	a {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: baseline;
+		column-gap: 1.5rem;
+		padding-block: 1.1rem;
+		border-top: 1px solid var(--rule);
+		color: inherit;
+		text-decoration: none;
+	}
+	.series {
+		display: block;
+		color: var(--muted);
+		font-size: 0.8rem;
+		line-height: 1.6;
+	}
+	.title {
+		display: block;
+		font-family: var(--font-mincho);
+		font-weight: 700;
+		font-size: 1.25rem;
+		line-height: 1.45;
+	}
+	.description {
+		display: block;
+		color: var(--muted);
+		font-size: 0.9rem;
+		line-height: 1.6;
+	}
+	a:hover .title {
+		color: var(--violet);
+	}
+</style>

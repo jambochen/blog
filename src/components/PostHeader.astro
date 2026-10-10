@@ -1,0 +1,74 @@
+---
+import { type Episode, seriesPositionLabel } from '../lib/posts';
+import FormattedDate from './FormattedDate.astro';
+
+interface Props {
+	episode: Episode;
+}
+
+const { episode } = Astro.props;
+const { series } = episode;
+const { title, description, pubDate, updatedDate, tags } = episode.post.data;
+---
+
+<header class="post-header wrap">
+	{
+		series && (
+			<p class="series">
+				<a href={`/series/${series.slug}/`}>{series.name}</a>
+				<span>{seriesPositionLabel(series)}</span>
+			</p>
+		)
+	}
+	<h1>{title}</h1>
+	<p class="description">{description}</p>
+	<p class="meta">
+		<span>發佈於 <FormattedDate date={pubDate} /></span>
+		{updatedDate && <span>更新於 <FormattedDate date={updatedDate} /></span>}
+		{tags.map((tag) => <span class="tag">#{tag}</span>)}
+	</p>
+</header>
+
+<style>
+	.post-header {
+		padding-top: 3.5rem;
+	}
+	.post-header > * {
+		max-width: var(--measure);
+	}
+	.series {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 1rem;
+		margin: 0 0 0.5rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+	h1 {
+		margin: 0;
+		font-family: var(--font-mincho);
+		font-weight: 900;
+		font-size: clamp(1.953rem, 5vw, 3.052rem);
+		line-height: 1.25;
+		text-wrap: balance;
+	}
+	.description {
+		margin: 0.75rem 0 0;
+		color: var(--muted);
+		font-size: 1.125rem;
+		line-height: 1.6;
+	}
+	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 1.5rem;
+		margin: 1.5rem 0 2.5rem;
+		padding-bottom: 1.5rem;
+		border-bottom: 1px solid var(--rule);
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+	.tag {
+		color: var(--violet);
+	}
+</style>

@@ -32,7 +32,17 @@ const { title, description, image = FallbackImage } = Astro.props;
 />
 <meta name="generator" content={Astro.generator} />
 
-<Font cssVariable="--font-atkinson" preload />
+<!-- Runs before first paint so a stored dark preference never flashes light. -->
+<script is:inline>
+	document.documentElement.dataset.theme =
+		localStorage.getItem('theme') ??
+		(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+</script>
+
+<Font cssVariable="--font-mincho" />
+<Font cssVariable="--font-latin" preload />
+<Font cssVariable="--font-ui" />
+<Font cssVariable="--font-code" />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />

@@ -14,6 +14,10 @@ const blog = defineCollection({
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
+			tags: z.array(z.string()).default([]),
+			// Posts sharing a series name are numbered within it; posts without one are standalone.
+			series: z.string().optional(),
+			seriesOrder: z.number().optional(),
 		}),
 });
 

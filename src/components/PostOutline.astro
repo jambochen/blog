@@ -1,0 +1,138 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+	headings: MarkdownHeading[];
+}
+
+const headings = Astro.props.headings.filter(({ depth }) => depth === 2 || depth === 3);
+---
+
+{
+	headings.length > 1 && (
+		<>
+			<nav class="outline outline-side" aria-label="本文大綱">
+				<p class="outline-title">大綱</p>
+				<ol>
+					{headings.map(({ depth, slug, text }) => (
+						<li class={`depth-${depth}`}>
+							<a href={`#${slug}`}>{text}</a>
+						</li>
+					))}
+				</ol>
+			</nav>
+
+			<details class="outline outline-inline">
+				<summary>大綱</summary>
+				<ol>
+					{headings.map(({ depth, slug, text }) => (
+						<li class={`depth-${depth}`}>
+							<a href={`#${slug}`}>{text}</a>
+						</li>
+					))}
+				</ol>
+			</details>
+		</>
+	)
+}
+
+<script>
+	const links = [...document.querySelectorAll<HTMLAnchorElement>('.outline-side a')];
+	const targets = links
+		.map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
+		.filter((target) => target !== null);
+
+	if (targets.length > 0) {
+		// A heading counts as current once it has scrolled into the top part of the viewport.
+		const READING_LINE = 120;
+		let queued = false;
+
+		const update = () => {
+			queued = false;
+			let current = -1;
+			targets.forEach((target, index) => {
+				if (target.getBoundingClientRect().top <= READING_LINE) current = index;
+			});
+			links.forEach((link, index) => {
+				if (index === current) link.setAttribute('aria-current', 'location');
+				else link.removeAttribute('aria-current');
+			});
+		};
+
+		addEventListener(
+			'scroll',
+			() => {
+				if (queued) return;
+				queued = true;
+				requestAnimationFrame(update);
+			},
+			{ passive: true },
+		);
+		update();
+	}
+</script>
+
+<style>
+	.outline ol {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.outline a {
+		display: block;
+		padding-block: 0.3rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+		line-height: 1.5;
+		text-decoration: none;
+	}
+	.outline a:hover {
+		color: var(--ink);
+	}
+	.depth-3 a {
+		padding-left: 1rem;
+	}
+
+	.outline-side {
+		position: sticky;
+		top: 2rem;
+		max-height: calc(100vh - 4rem);
+		overflow-y: auto;
+		padding-left: 1rem;
+		border-left: 1px solid var(--rule);
+	}
+	.outline-title {
+		margin: 0 0 0.5rem;
+		font-family: var(--font-mincho);
+		font-weight: 900;
+	}
+	.outline-side a[aria-current] {
+		color: var(--violet);
+		font-weight: 700;
+	}
+
+	.outline-inline {
+		display: none;
+		max-width: var(--measure);
+		margin-bottom: 2.5rem;
+		padding: 0.75rem 1rem;
+		background: var(--surface);
+	}
+	.outline-inline summary {
+		font-family: var(--font-mincho);
+		font-weight: 900;
+		cursor: pointer;
+	}
+	.outline-inline ol {
+		margin-top: 0.5rem;
+	}
+
+	@media (max-width: 1000px) {
+		.outline-side {
+			display: none;
+		}
+		.outline-inline {
+			display: block;
+		}
+	}
+</style>

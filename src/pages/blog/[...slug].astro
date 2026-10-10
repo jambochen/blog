@@ -1,20 +1,43 @@
 ---
-import { type CollectionEntry, getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import BlogPost from '../../layouts/BlogPost.astro';
+import { type Episode, getEpisodes, groupSeries, neighbours } from '../../lib/posts';
 
 export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: post,
+	const episodes = await getEpisodes();
+	const allSeries = groupSeries(episodes);
+	return episodes.map((episode) => ({
+		params: { slug: episode.post.id },
+		props: {
+			episode,
+			...neighbours(episodes, episode),
+			seriesEpisodes: allSeries.find((series) => series.slug === episode.series?.slug)?.episodes,
+		},
 	}));
 }
-type Props = CollectionEntry<'blog'>;
 
-const post = Astro.props;
-const { Content } = await render(post);
+interface Props {
+	episode: Episode;
+	previous?: Episode;
+	next?: Episode;
+	seriesEpisodes?: Episode[];
+}
+
+const { episode, previous, next, seriesEpisodes } = Astro.props;
+const { Content, headings, remarkPluginFrontmatter } = await render(episode.post);
+const headingTexts: string[] = remarkPluginFrontmatter.headingTexts ?? [];
+const outline = headings.map((heading, index) => ({
+	...heading,
+	text: headingTexts[index] ?? heading.text,
+}));
 ---
 
-<BlogPost {...post.data}>
+<BlogPost
+	episode={episode}
+	previous={previous}
+	next={next}
+	seriesEpisodes={seriesEpisodes}
+	headings={outline}
+>
 	<Content />
 </BlogPost>

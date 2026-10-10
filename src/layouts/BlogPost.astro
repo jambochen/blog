@@ -1,84 +1,153 @@
 ---
-import { Image } from 'astro:assets';
-import type { CollectionEntry } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
-import Header from '../components/Header.astro';
+import type { MarkdownHeading } from 'astro';
+import MermaidDiagrams from '../components/MermaidDiagrams.astro';
+import PostHeader from '../components/PostHeader.astro';
+import PostOutline from '../components/PostOutline.astro';
+import { SITE_TITLE } from '../consts';
+import type { Episode } from '../lib/posts';
+import Base from './Base.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+interface Props {
+	episode: Episode;
+	previous?: Episode;
+	next?: Episode;
+	seriesEpisodes?: Episode[];
+	headings: MarkdownHeading[];
+}
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { episode, previous, next, seriesEpisodes, headings } = Astro.props;
+const { title, description } = episode.post.data;
 ---
 
-<html lang="en">
-	<head>
-		<BaseHead title={title} description={description} />
-		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-		</style>
-	</head>
+<Base title={`${title} | ${SITE_TITLE}`} description={description}>
+	<article>
+		<PostHeader episode={episode} />
+		<div class="wrap body">
+			<div class="prose">
+				<slot />
+			</div>
+			<aside class="side">
+				<PostOutline headings={headings} />
+			</aside>
+		</div>
+	</article>
 
-	<body>
-		<Header />
-		<main>
-			<article>
-				<div class="hero-image">
-					{heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
-				</div>
-				<div class="prose">
-					<div class="title">
-						<div class="date">
-							<FormattedDate date={pubDate} />
-							{updatedDate && (
-								<div class="last-updated-on">
-									Last updated on <FormattedDate date={updatedDate} />
-								</div>
+	{
+		episode.series && seriesEpisodes && (
+			<nav class="wrap after contents" aria-label="系列目錄">
+				<h2>
+					<a href={`/series/${episode.series.slug}/`}>{episode.series.name}</a>
+					<span class="contents-total">共 {episode.series.total} 篇</span>
+				</h2>
+				<ol>
+					{seriesEpisodes.map((item) => (
+						<li>
+							{item.post.id === episode.post.id ? (
+								<span aria-current="page">{item.post.data.title}（本篇）</span>
+							) : (
+								<a href={`/blog/${item.post.id}/`}>{item.post.data.title}</a>
 							)}
-						</div>
-						<h1>{title}</h1>
-						<hr />
-					</div>
-					<slot />
-				</div>
-			</article>
-		</main>
-		<Footer />
-	</body>
-</html>
+						</li>
+					))}
+				</ol>
+			</nav>
+		)
+	}
+
+	{
+		(next || previous) && (
+			<nav class="wrap after turn" aria-label="前後篇">
+				{next && (
+					<a href={`/blog/${next.post.id}/`}>
+						<span class="turn-label">下一篇</span>
+						<span class="turn-title">{next.post.data.title}</span>
+					</a>
+				)}
+				{previous && (
+					<a href={`/blog/${previous.post.id}/`}>
+						<span class="turn-label">上一篇</span>
+						<span class="turn-title">{previous.post.data.title}</span>
+					</a>
+				)}
+			</nav>
+		)
+	}
+
+	<MermaidDiagrams />
+</Base>
+
+<style>
+	.body {
+		display: grid;
+		grid-template-columns: minmax(0, var(--measure)) minmax(0, 16rem);
+		justify-content: space-between;
+		column-gap: 3rem;
+	}
+	/* The outline is second in the source so the article text comes first for screen readers; on narrow screens it moves above the text. */
+	@media (max-width: 1000px) {
+		.body {
+			display: flex;
+			flex-direction: column-reverse;
+		}
+	}
+	.after {
+		margin-top: 4rem;
+	}
+	.contents + .turn {
+		margin-top: 2.5rem;
+	}
+	.contents h2 {
+		margin: 0 0 0.5rem;
+		font-family: var(--font-mincho);
+		font-size: 1.25rem;
+		font-weight: 900;
+		line-height: 1.4;
+	}
+	.contents h2 a {
+		color: inherit;
+	}
+	.contents-total {
+		margin-left: 0.75rem;
+		color: var(--muted);
+		font-family: var(--font-latin), var(--font-mincho);
+		font-size: 0.9rem;
+		font-weight: 400;
+	}
+	.contents ol {
+		max-width: var(--measure);
+		margin: 0;
+		padding-left: 1.75rem;
+	}
+	.contents li {
+		padding-block: 0.2rem;
+	}
+	.contents li::marker {
+		color: var(--muted);
+	}
+	.contents [aria-current] {
+		font-weight: 700;
+	}
+	.turn a {
+		display: grid;
+		grid-template-columns: 4.5rem minmax(0, 1fr);
+		column-gap: 1rem;
+		max-width: var(--measure);
+		padding-block: 0.9rem;
+		border-top: 1px solid var(--rule);
+		color: inherit;
+		text-decoration: none;
+	}
+	.turn a:last-child {
+		border-bottom: 1px solid var(--rule);
+	}
+	.turn-label {
+		color: var(--muted);
+	}
+	.turn-title {
+		font-family: var(--font-mincho);
+		font-weight: 700;
+	}
+	.turn a:hover .turn-title {
+		color: var(--violet);
+	}
+</style>
