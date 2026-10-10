@@ -1,0 +1,210 @@
+---
+title: '規範檔與 skill'
+description: '把每次對話都要重講的話寫成規範檔與 skill。'
+pubDate: '2026-10-10'
+series: '從網頁對話到 coding agent'
+seriesOrder: 5
+draft: true
+---
+
+〈純文字工作法〉一篇介紹了 Markdown，本篇介紹兩種以 Markdown 寫成、給 agent 讀的檔案：規範檔記錄專案的規矩，每次對話自動載入；skill 是事先寫好、可重複使用的 prompt，各針對一類任務，換了專案也用得上。
+
+## 每次對話都須重述的內容
+
+〈LLM 與 agent 的運作原理〉一篇提過，LLM 本身沒有跨對話的記憶，上一個對話裡交代過的事，agent 一概不記得。於是每開一個新對話，同樣的話便得再講一次：資料放在哪個資料夾、慣用哪些套件、圖要什麼風格、哪些檔案不可更動。如果漏講，agent 便依自己的猜測行事，比如換用一套沒用過的繪圖套件，或把輸出的圖存到意料之外的位置，使用者事後再逐一糾正。
+
+這些內容 agent 無法從檔案中看出，因為它們是使用者的習慣與決定，並未寫在任何一處。既然每次都相同，便該寫成一份檔案放在專案裡，由 agent 在每個對話開始時自行讀取，這就是規範檔。
+
+## 規範檔的作用與位置
+
+規範檔是一份 Markdown 檔，放在專案的根目錄，即〈離開網頁對話〉一篇以 Select folder 選取的那個資料夾之下。每個對話開始時，規範檔的內容會自動載入 context window，效果等同於每次對話開頭先替使用者把這些話講過一遍。規範檔的效力以這個資料夾為界，資料夾如果裝著數份無關的工作，同一份規矩便套用於全部。
+
+檔名依工具而定，常見的有兩個。`AGENTS.md` 是多家 coding agent 共用的檔名，Codex 讀的即是這一份，見[官方說明](https://developers.openai.com/codex/guides/agents-md)；Claude 則另用 `CLAUDE.md`（放在專案的 `.claude` 資料夾內也可以），見[官方文件](https://code.claude.com/docs/en/memory)。兩者只是檔名不同，內容的寫法與作用並無差別，本篇以下所述對兩者都適用。
+
+同時使用兩家工具的人不必維護兩份內容相同的檔案，常見的做法是規矩只寫在其中一份，另一份只留一行指向它。例如規矩全寫在 `AGENTS.md`，`CLAUDE.md` 的內容便只有 `@AGENTS.md` 一行，`@` 加檔名是 Claude 規範檔的匯入語法，Claude 讀到這一行，便將該檔的內容一併載入；反過來，規矩寫在 `CLAUDE.md`，`AGENTS.md` 則只寫一句「Read `CLAUDE.md`」。新版的 Claude Code 在專案裡沒有 `CLAUDE.md` 時也會直接讀取 `AGENTS.md`，只用 `AGENTS.md` 一份也可以。
+
+另有一份使用者層級的規範檔，對電腦上所有專案都生效，適合放置與專案無關的個人習慣，例如一律以繁體中文回覆。這一份放在使用者資料夾之下，Windows 上的使用者資料夾即 `C:\Users\使用者名稱`，Claude 的規範檔是其中的 `.claude\CLAUDE.md`，Codex 的是 `.codex\AGENTS.md`。官方文件以 macOS 與 Linux 的寫法為準，寫作 `~/.claude/CLAUDE.md` 與 `~/.codex/AGENTS.md`，開頭的 `~` 指的就是使用者資料夾。初期只寫專案的那一份即可。
+
+規範檔會佔用 context window。以〈LLM 與 agent 的運作原理〉一篇的白板來說，規範檔在每次對話開始前便已寫在板上，寫得愈長，留給實際工作的空間便愈少，agent 遵守的程度也隨之下降；Anthropic 建議每份控制在 200 行以內，並指出指示愈具體、愈簡短，agent 愈能一致地遵守。「圖要好看」這類寫法幾乎無用，「圖一律存成 PNG，寬 8 吋、高 5 吋，放在 `output/figures`」則可以照辦。
+
+規範檔是 context，不具強制力。對 agent 而言，規範檔的內容是一段每次都會讀到的指示，agent 多數時候會遵守，但沒有機制保證，對話一長也可能遺忘，就像考卷開頭的作答說明，沒有人逐題檢查考生是否照做。此為〈LLM 與 agent 的運作原理〉一篇所述 LLM 的性質，因此規範檔不能取代〈離開網頁對話〉一篇的權限提示，寫了「原始資料不可修改」，看到 agent 要改原始資料時仍須按下 Reject。
+
+## 由 agent 起草初版
+
+規範檔不必自己從空白寫起。Agent 既然讀得到專案裡的全部檔案，資料夾如何安排、用了哪些套件、腳本之間的先後順序，它都可自行歸納，使用者只需補上它看不出來的部分。由 agent 建立檔案還有一個好處，檔名與位置不會出錯，它知道自己讀的是 `CLAUDE.md` 還是 `AGENTS.md`，使用者不必自己記。
+
+Claude Code 內建的指令以 `/` 開頭，在桌面 app 的對話框輸入 `/` 即可瀏覽，也可由「+」按鈕的 Slash commands 進入。其中的 `/init` 會分析專案並產生一份起始的 `CLAUDE.md`；如果檔案已存在，則提出修改建議而不覆寫。Codex 也有 `/init`，產生的是 `AGENTS.md`，見[官方的指令列表](https://learn.chatgpt.com/docs/reference/slash-commands)。
+
+初版出來之後須自己刪改。Agent 寫的多半是它自檔案中看得出來的事，而這些事它下次仍看得出來，留著只佔篇幅；該留下的是它看不出來的部分，即使用者的決定與禁忌。刪改時可以逐條自問，如果刪去這一條，agent 是否便會做錯，不會的就刪。
+
+以下是一份資料分析專案的規範檔，僅供對照，內容須依自己的專案改寫：
+
+```markdown
+# 專案說明
+
+這是一份資料分析的專案。一律以繁體中文回覆。
+
+## 資料夾
+
+- `data/raw/`：原始資料，不可修改、不可覆寫。
+- `data/clean/`：清理後的資料，由腳本產生。
+- `R/`：分析腳本，由 `main.R` 依序執行。
+- `output/figures/`、`output/tables/`：圖與表的輸出位置。
+
+## 慣例
+
+- 資料處理與繪圖沿用專案裡已在使用的套件，不改用其他套件。
+- 圖存成 PNG，寬 8 吋、高 5 吋，座標軸標題用中文。
+- 讀取 CSV 時明確指定編碼。
+- 不自行安裝新套件，需要時先詢問。
+```
+
+## 規範的逐步累積
+
+規範檔不必一次寫完，上面那份範例只是起點，本篇也不打算列出一份完整的版本。規矩是遇到問題才加的，同一件事糾正了第二次，即可請 agent 將它寫進規範檔，日後要刪改某一條也是交代 agent 去做；事先想到什麼便寫什麼，多半會寫進一堆用不上的條文。
+
+規範檔也須定期清理。隨著專案的演進，早期寫下的規矩可能已經過時，例如資料夾改了安排、換用了別的套件、流程多了一步，而舊規矩仍留在檔案裡，agent 照樣遵守，或在新舊兩條互相衝突時任選其一。因此寫了新規矩便回頭看舊規矩是否與之衝突；agent 的行為如果莫名改變，則先查它讀了哪些檔案。
+
+規矩累積多了，也不必全擠在規範檔裡。只在某一類任務用得上的規矩，可以依任務分寫成數份檔案，規範檔只留每次都用得上的內容，另以一行說明何時該讀哪一份，agent 做到那一類任務時才去讀：
+
+```markdown
+- 畫圖前，先讀 `docs/figures.md`。
+- 清理資料前，先讀 `docs/cleaning.md`。
+```
+
+這裡寫的是一句白話而非 `@` 加檔名，因為 `@` 是匯入，被匯入的檔案在對話開始時便全文載入，並不節省 context window。如此規範檔便成了入口，本身保持簡短，細節留在各自的檔案裡；讀不讀仍由 agent 判斷，因此這一行要寫明在什麼情況下讀。
+
+## Skill
+
+另有一類話同樣要一講再講，卻與專案無關，而是與任務有關：查錯時應依什麼步驟進行、查資料時該找什麼來源、動手之前該先問清楚哪些事。這些做法在哪個專案都一樣，每次用到都得把同一段 prompt 再寫一遍，寫得倉促便漏掉幾項。
+
+Skill 就是把這樣的一段 prompt 事先寫成檔案，用到時喚用即可，不必重寫。它的內容與使用者自己在對話框裡交代的話並無不同；既然寫成了檔案，便可在不同的專案反覆使用，也可交給別人使用，他人花時間琢磨過的 prompt 因此可以直接安裝。Skill 可以自己寫，本篇只介紹安裝他人寫好的。
+
+Skill 也不像規範檔那樣一直佔用 context window。平時只有它的名稱與一兩句描述載入，agent 據此知道有這項做法可用；待使用者指名喚用，或 agent 判斷眼前的任務與描述相符時，完整的內容才會載入。使用者層級的規範檔同樣跨專案，但它每次對話都全文載入，只適合放簡短的個人習慣，成篇的做法說明則寫成 skill。
+
+### 安裝他人寫好的 skill
+
+Skill 多半成組發佈。Claude 將包裝的單位稱為 plugin，一個 plugin 可以內含多個 skill；收錄 plugin 供人瀏覽與安裝的目錄則稱為 marketplace。Anthropic 維護一個官方的 marketplace，Claude 預設便已接上，收錄的 plugin 一部分由 Anthropic 所寫，其餘是社群與合作廠商提交的，後文試用的 `mattpocock-skills` 屬於後者。
+
+收錄於官方 marketplace 的 plugin 可在桌面 app 內以圖形介面安裝：點選提示框旁的「+」按鈕，選 Plugins，再選 Add plugin，於開啟的 plugin 瀏覽器中找到要裝的那一個。
+
+`mattpocock-skills` 則改由作者的 repo 安裝，因為官方 marketplace 收錄的版本較舊，撰寫時尚未包含後文的 `retro`。社群的作者多半把自己的 GitHub repo 做成一個 marketplace，在對話框輸入內建的 `/plugin` 指令，先以一行將它加入，再以一行安裝其中的 plugin：
+
+```text
+/plugin marketplace add mattpocock/skills
+/plugin install mattpocock-skills@mattpocock
+```
+
+第一行的 `mattpocock/skills` 是 GitHub 上的作者名與 repo 名，第二行 `@` 之後是 marketplace 的名稱。後文介紹的 `caveman` 未收錄於官方 marketplace，同樣以這兩行安裝：
+
+```text
+/plugin marketplace add JuliusBrussee/caveman
+/plugin install caveman@caveman
+```
+
+Codex 同樣有 plugin 與 marketplace，也同樣以兩行指令安裝，只是指令不在對話框裡輸入，而是在終端機（以文字輸入指令的視窗）執行，Windows 上可從開始功能表開啟「終端機」或 PowerShell：
+
+```text
+codex plugin marketplace add mattpocock/skills
+codex plugin add mattpocock-skills@mattpocock
+```
+
+另一個做法是將 GitHub 連結交給 agent，請它把 skill 的檔案直接放進 Codex 讀取 skill 的資料夾，即專案裡的 `.agents/skills`，如此裝好的可以打字喚用：
+
+```text
+把 https://github.com/mattpocock/skills 裡的 grilling、grill-me、grill-with-docs、
+domain-modeling、research、diagnosing-bugs、retro、writing-for-agents、
+improve-codebase-architecture、codebase-design
+這幾個 skill 下載並安裝到 .agents/skills。
+```
+
+清單是後文試用的幾個 skill，另加〈整理專案〉一篇會用到的 `improve-codebase-architecture`。其中 `domain-modeling`、`writing-for-agents` 與 `codebase-design` 不必直接喚用，`grill-with-docs`、`retro` 與 `improve-codebase-architecture` 會各自載入它們，缺了便無法運作。過程中會出現兩次核准提示，一次是連網，一次是寫入 workspace 以外的位置，都是〈離開網頁對話〉一篇所述沙盒的正常反應。兩個做法擇一即可。
+
+Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 marketplace 的頁面裡點擊使用，無法打字喚用。
+
+裝好之後，可以打字喚用：在對話框輸入 `/`，自清單中選取，選定的 skill 會顯示於輸入框，其後接著寫要交代的事；Codex 輸入的是 `$`。也可什麼都不做，agent 判斷任務與某個 skill 的描述相符時會自行載入。
+
+兩相比較，Claude 在社群支援上比 Codex 完善。社群的作者多以 Claude 為先，`mattpocock-skills` 即只做了 Claude 的 plugin，Codex 是讀取同一份寫給 Claude 的清單才裝得上。另有跨工具通用的安裝器 [skills.sh](https://skills.sh)，以 `npx` 執行，須先安裝 Node.js，而本系列的主線不安裝 Node.js，因此不採用。
+
+### 試用 `mattpocock-skills`
+
+`mattpocock-skills` 是 Matt Pocock 公開的一組 skill，原為軟體開發而寫，其中數個與 code 的種類無關，資料分析也用得上。初次試用建議指名喚用，才能確知用上的是哪一個；以 plugin 安裝的 skill，清單裡的名稱帶有 plugin 的前綴，例如 `/mattpocock-skills:grilling`。
+
+先前已從官方 marketplace 裝過的人，先以 `/plugin uninstall mattpocock-skills` 移除，再照前文的兩行重新安裝，否則沒有後文的 `retro`。
+
+以下試用其中幾個。
+
+以 grill 為名的 skill 有三個，做的是同一件事：讓 agent 反過來拷問使用者，就一份計畫逐輪提問，每一題附上它建議的答案，直到所有決定都已講明、沒有任何一處是默默假定的，在此之前它不會動手。分析計畫正適合如此處理：空白的欄位如何處置、納入哪些資料、依什麼標準剔除，這些決定如果未事先講明，agent 便會替使用者決定。〈寫 prompt 與選模型〉一篇「Prompt 技巧與協作的做法」一節有「請 agent 先問」一項，做法是自己寫一段 prompt 請 agent 訪問使用者；這三個 skill 便是那段 prompt 的現成版本，且寫得更周全，例如規定查得到的事實由 agent 自己去查，只把須由使用者決定的事拿來問。
+
+三者的分別在於由誰喚用，以及問完留下什麼。`grilling` 是本體，拷問的規則都寫在這一份，使用者可以指名喚用，agent 也可以自行載入。`grill-me` 與 `grill-with-docs` 只能由使用者喚用，內容各只有一句：前者是載入 `grilling`；後者是同時載入 `grilling` 與 `domain-modeling`，一邊拷問一邊把談定的術語寫進專案的術語表，不易說明原因的決定則另存成一份決策紀錄（ADR）。只想把計畫談清楚，用 `grill-me`；談定的內容日後還要讓 agent 讀到，用 `grill-with-docs`。
+
+```text
+/mattpocock-skills:grill-me
+我打算把三年的問卷資料合併成一份，再畫出各年的變化。
+```
+
+熟悉之後不必每次指名喚用，可以在 prompt 裡加一句，請 agent 自行判斷是否需要拷問：
+
+```text
+把 data 資料夾裡各年的檔案合併成一份。
+動手之前自行判斷有沒有需要先拷問我的地方，有就用 grilling，沒有就直接做。
+```
+
+需求已清楚時它便直接動手，有含糊之處才載入 `grilling`。這個做法只對 `grilling` 有效，另外兩個 agent 無法自行載入。
+
+`research` 用於查資料。它讓 agent 在背景查閱第一手來源，例如套件的官方文件與原始碼，而非轉述的文章，然後將結果寫成一份 Markdown 檔存入專案，每項說法都附出處，日後可以再讀，也可逐項點開出處核對。遇到不熟悉的套件，或兩種做法不知如何取捨時可用。
+
+```text
+/mattpocock-skills:research
+有哪些套件可以讀取 Excel 檔？
+各自支援哪些格式，以官方文件為準。
+```
+
+`diagnosing-bugs` 用於查錯。Agent 遇到錯誤時常見的做法是讀一讀 code，猜一個原因，改了再試；這個 skill 要求它先建立一個能穩定重現問題、數秒內可判定對錯的檢查，再列出數個可驗證的假設並逐一排除，修好之後清除過程中加入的除錯 code。腳本的結果偶爾不同、某一步突然變慢、更新套件後數字對不上，都屬適用的情境。其說明以軟體開發的用語寫成，部分步驟在資料分析上用不到，agent 會自行略過。
+
+```text
+/mattpocock-skills:diagnosing-bugs
+這份腳本每次執行得到的結果都略有不同，找出原因。
+```
+
+`retro` 用於一件事做完之後。它讓 agent 回頭檢視這次對話的紀錄，找出自己在哪裡繞了遠路、犯了哪些錯，再依嚴重程度提出改善工作環境的建議，由使用者決定是否採納。建議的對象之一即是規範檔：哪幾條寫了卻沒有改變 agent 的行為、可以刪去，哪些錯誤與其寫成規矩不如改由自動檢查攔下，規範檔太長時哪些內容該移到別的檔案、只留一行指向它。「規範的逐步累積」一節的做法是遇到問題才逐條地加，何時分檔也由使用者自己判斷；`retro` 則是整份地看，除了加也會刪，並指出該分出去的內容。它只能由使用者喚用，預設檢視目前的對話。
+
+```text
+/mattpocock-skills:retro
+檢視這次對話，指出規範檔有哪些地方該增刪。
+```
+
+### `caveman`：以極簡回覆節省用量
+
+[`caveman`](https://github.com/JuliusBrussee/caveman) 是專為節省用量而寫的 skill，作用是讓 agent 以極簡的句子回覆，省去客套與重複的說明，技術內容不變。〈寫 prompt 與選模型〉一篇提過，用量取決於送進與送出 LLM 的 token 總數；`caveman` 減少的是 agent 輸出的文字，對於讀檔與工具輸出所佔的用量沒有影響，因此節省的幅度視工作的性質而定，對話多而讀檔少時較為明顯。
+
+安裝的兩行指令已見前文。裝好之後在對話框輸入 `/caveman` 即啟用，此後整個對話的回覆都維持極簡，直到輸入 `/caveman off` 或直接說「stop caveman」為止，`/caveman status` 可查看目前是否啟用。另有兩個更省的級別，`/ultracave` 的句子更短，`/megacave` 改以文言文回覆，一般用 `/caveman` 即可。精簡的只是句子：code、指令、路徑、數字與錯誤訊息照原樣輸出，回覆的語言不變，遇到安全警告、無法復原的操作這類須講清楚的情況，則暫時改回完整的句子。
+
+`caveman` 原本的設計是每個對話自動啟用，靠的是 plugin 附帶的 hook，即在對話開始等時機自動執行的一段 code，而這段 code 須有 Node.js 才能執行。本系列的主線不安裝 Node.js，因此改為每個對話手動輸入一次 `/caveman`。
+
+Codex 喚用時輸入的是 `$caveman`，安裝則比照前文的做法，將 GitHub 連結交給 agent，請它把其中名為 `caveman` 的 skill 裝進 `.agents/skills`。
+
+### `SKILL.md` 的內容
+
+Skill 的本體是一份名為 `SKILL.md` 的 Markdown 檔，一個 skill 一個資料夾，檔案便放在其中。以前文試用的 `research` 為例，[它的 `SKILL.md`](https://github.com/mattpocock/skills/blob/main/skills/engineering/research/SKILL.md) 在 1.3.1 版的全文如下：
+
+```markdown
+---
+name: research
+description: Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.
+---
+
+Spin up a **background agent** to do the research, so you keep working while it reads.
+
+Its job:
+
+1. Investigate the question against **primary sources** (official docs, source code, specs, first-party APIs), not a secondary write-up of them. Follow every claim back to the source that owns it.
+2. Write the findings to a single Markdown file, citing each claim's source.
+3. Save it where the repo already keeps such notes; match the existing convention, and if there is none, put it somewhere sensible and say where.
+```
+
+開頭兩行 `---` 之間的部分稱為 front matter，記錄這份檔案自身的資訊：`name` 是 skill 的名稱，`description` 說明它做什麼、何時該用。「Skill」一節說平時只有名稱與描述載入，指的就是這兩欄，agent 也是依 `description` 判斷眼前的任務是否該載入它，因此描述裡寫明了使用的時機。
+
+front matter 以下是正文，也就是一段寫給 agent 的 prompt：在背景另啟一個 agent 去查，只查第一手來源，結果寫成一份 Markdown 檔並逐項附上出處，與前文對 `research` 的介紹一一對應。全文沒有一行 code，與使用者自己在對話框裡交代的一段話並無不同，只是事先寫好、存成了檔案。
+
+其他 skill 也是如此，只是長短不同。`grill-me` 的正文只有一句，要 agent 載入 `grilling`；它的 front matter 多了一行 `disable-model-invocation: true`，前文說它只能由使用者喚用，便是這一行的作用。較長的 skill 會把細節分寫在同一個資料夾的其他檔案裡，正文註明何時去讀，做法與「規範的逐步累積」一節的分檔相同。想知道某個 skill 實際要求 agent 做什麼，到它的 repo 打開 `SKILL.md` 讀一遍即可。

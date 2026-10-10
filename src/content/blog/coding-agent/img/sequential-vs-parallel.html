@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>循序與平行之別</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Serif:ital@0;1&family=Noto+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@400&family=Noto+Sans+TC:wght@400;500;600&family=Noto+Serif+TC:wght@400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;   /* white-smoke */
+      --color-ink:     #2d3142;   /* jet-black */
+      --color-muted:   #4f5d75;   /* blue-slate */
+      --color-accent:  #eb6c36;   /* atomic-tangerine */
+      --font-sans:     'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', 'Noto Serif', 'Noto Serif TC', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+
+    .frame { max-width: 1200px; width: 100%; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+
+    svg { width: 100%; min-width: 960px; display: block; }
+    @media print {
+      .diagram-container { overflow-x: visible; }
+      svg { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Gantt · Diagram Design</p>
+    <h1>循序與平行之別</h1>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 960 472" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sequential-vs-parallel-title sequential-vs-parallel-desc">
+        <title id="sequential-vs-parallel-title">循序與平行之別</title>
+        <desc id="sequential-vs-parallel-desc">循序執行時八次計算由一個核心依序完成，其餘核心閒置；平行執行時主行程把八次計算分給四個 worker 同時進行，各算兩次，再由主行程彙整，完成的時間大幅提前。</desc>
+
+        <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+        <rect x="40" y="40" width="880" height="112" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <rect x="56" y="44" width="40" height="16" rx="2" fill="#f1f1f2"/>
+        <text x="76.0" y="56" fill="rgba(45,49,66,0.55)" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">循序</text>
+        <text x="184" y="86" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">一個核心</text>
+        <rect x="200" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="241.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">1</text>
+        <rect x="287" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="328.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">2</text>
+        <rect x="374" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="415.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">3</text>
+        <rect x="461" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="502.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">4</text>
+        <rect x="548" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="589.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">5</text>
+        <rect x="635" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="676.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">6</text>
+        <rect x="722" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="763.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">7</text>
+        <rect x="809" y="72" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="850.5" y="86" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">8</text>
+        <text x="184" y="118" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">其餘核心</text>
+        <rect x="200" y="104" width="692" height="20" rx="4" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="546.0" y="118" fill="#4f5d75" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">閒置</text>
+        <rect x="40" y="176" width="880" height="208" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <rect x="56" y="180" width="40" height="16" rx="2" fill="#f1f1f2"/>
+        <text x="76.0" y="192" fill="rgba(45,49,66,0.55)" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">平行</text>
+        <text x="184" y="222" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">主行程</text>
+        <rect x="200" y="208" width="44" height="20" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="222" y="222" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">分派</text>
+        <text x="184" y="254" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">worker 1</text>
+        <rect x="248" y="240" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="289.5" y="254" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">1</text>
+        <rect x="335" y="240" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="376.5" y="254" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">2</text>
+        <text x="184" y="286" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">worker 2</text>
+        <rect x="248" y="272" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="289.5" y="286" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">3</text>
+        <rect x="335" y="272" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="376.5" y="286" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">4</text>
+        <text x="184" y="318" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">worker 3</text>
+        <rect x="248" y="304" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="289.5" y="318" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">5</text>
+        <rect x="335" y="304" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="376.5" y="318" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">6</text>
+        <text x="184" y="350" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">worker 4</text>
+        <rect x="248" y="336" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="289.5" y="350" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">7</text>
+        <rect x="335" y="336" width="83" height="20" rx="4" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="376.5" y="350" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist Mono', ui-monospace, monospace" text-anchor="middle">8</text>
+        <rect x="422" y="208" width="44" height="20" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="444" y="222" fill="#2d3142" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="middle">彙整</text>
+        <line x1="474" y1="200" x2="474" y2="364" stroke="#eb6c36" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <text x="484" y="304" fill="#eb6c36" font-size="12" font-weight="600" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="start">完成</text>
+        <line x1="200" y1="408" x2="896" y2="408" stroke="#4f5d75" stroke-width="1"/>
+        <path d="M 890 404 L 896 408 L 890 412" fill="none" stroke="#4f5d75" stroke-width="1"/>
+        <text x="184" y="412" fill="#4f5d75" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="end">時間</text>
+        <line x1="40" y1="432" x2="920" y2="432" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+        <rect x="40" y="442" width="20" height="12" rx="2" fill="rgba(79,93,117,0.15)" stroke="#4f5d75" stroke-width="1"/>
+        <text x="68" y="452" fill="#4f5d75" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="start">一次計算</text>
+        <rect x="144" y="442" width="20" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+        <text x="172" y="452" fill="#4f5d75" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="start">主行程的分派與彙整</text>
+        <rect x="308" y="442" width="20" height="12" rx="2" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="336" y="452" fill="#4f5d75" font-size="12" font-weight="500" font-family="'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif" text-anchor="start">閒置</text>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>
