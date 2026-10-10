@@ -18,6 +18,8 @@ const blog = defineCollection({
 			// Posts sharing a series name are numbered within it; posts without one are standalone.
 			series: z.string().optional(),
 			seriesOrder: z.number().optional(),
+			// Drafts render in `astro dev` only.
+			draft: z.boolean().default(false),
 		}),
 });
 

@@ -37,9 +37,14 @@ function bySeriesOrder(a: Post, b: Post): number {
 	return byPubDate(a, b);
 }
 
+// Drafts are left out of a build but kept in `astro dev`, so they can be proofread in place.
+export function getPosts(): Promise<Post[]> {
+	return getCollection('blog', ({ data }) => import.meta.env.DEV || !data.draft);
+}
+
 // Oldest first.
 export async function getEpisodes(): Promise<Episode[]> {
-	const posts = (await getCollection('blog')).sort(byPubDate);
+	const posts = (await getPosts()).sort(byPubDate);
 
 	const members = new Map<string, Post[]>();
 	for (const post of posts) {
