@@ -43,7 +43,7 @@ body {
 	flex-direction: column;
 	min-height: 100vh;
 	margin: 0;
-	font-family: var(--font-latin), var(--font-mincho);
+	font-family: var(--font-gothic);
 	line-height: 1.85;
 	text-autospace: normal;
 	overflow-wrap: break-word;
@@ -104,7 +104,7 @@ a:hover {
 code,
 pre,
 kbd {
-	font-family: var(--font-code), var(--font-mincho), monospace;
+	font-family: var(--font-code), var(--font-gothic), monospace;
 }
 
 .prose {

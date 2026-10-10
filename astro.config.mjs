@@ -12,7 +12,7 @@ import { remarkMermaid } from './src/lib/remarkMermaid.ts';
 
 // The Latin faces sit in front of the CJK face in one font-family stack, so they
 // must not carry a generic fallback: `serif` would match first and swallow every
-// Chinese glyph before the stack reaches Noto Serif TC.
+// Chinese glyph before the stack reaches the CJK face.
 const latinOnly = { fallbacks: [], optimizedFallbacks: false, subsets: ['latin'] };
 
 // https://astro.build/config
@@ -28,10 +28,10 @@ export default defineConfig({
 				borderRadius: '0',
 				borderColor: 'transparent',
 				codeBackground: ({ theme }) => (theme.type === 'dark' ? '#1f2429' : '#e1e5e9'),
-				codeFontFamily: 'var(--font-code), var(--font-mincho), monospace',
+				codeFontFamily: 'var(--font-code), var(--font-gothic), monospace',
 				codeFontSize: '0.82rem',
 				codeLineHeight: '1.7',
-				uiFontFamily: 'var(--font-ui), var(--font-mincho), sans-serif',
+				uiFontFamily: 'var(--font-ui), var(--font-gothic), sans-serif',
 				frames: {
 					frameBoxShadowCssValue: 'none',
 					editorActiveTabIndicatorTopColor: 'transparent',
@@ -65,12 +65,15 @@ export default defineConfig({
 			fallbacks: ['serif'],
 		},
 		{
-			provider: fontProviders.fontsource(),
-			name: 'STIX Two Text',
-			cssVariable: '--font-latin',
+			// Running text is set in a sans face: the thin horizontal strokes of the serif
+			// face blur at text sizes on ordinary-density screens. Its own Latin is used too.
+			provider: fontProviders.google(),
+			name: 'Noto Sans TC',
+			cssVariable: '--font-gothic',
 			weights: [400, 700],
-			styles: ['normal', 'italic'],
-			...latinOnly,
+			styles: ['normal'],
+			subsets: ['chinese-traditional', 'latin'],
+			fallbacks: ['sans-serif'],
 		},
 		{
 			provider: fontProviders.fontsource(),
