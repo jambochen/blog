@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <style>
+    /* Loaded as an image, so page styles do not reach in: the greys are mid-tones that read on both the light and the dark page. */
+    .line { fill: none; stroke: #808892; stroke-width: 3; stroke-linecap: round; }
+    .commit { fill: #808892; }
+    .head { fill: none; stroke: #eb6c36; stroke-width: 3; animation: back 6s ease-in-out infinite; }
+    .later { animation: lose 6s ease-in-out infinite; }
+    /* The marker returns to the second commit, and the three after it are what a discarding revert loses. */
+    @keyframes back {
+      0%, 30% { transform: translateX(0); }
+      45%, 85% { transform: translateX(-165px); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes lose {
+      0%, 32% { opacity: 1; }
+      47%, 85% { opacity: 0.2; }
+      100% { opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .head { animation: none; transform: translateX(-165px); }
+      .later { animation: none; opacity: 0.2; }
+    }
+  </style>
+  <path class="line" d="M40 100H95" />
+  <circle class="commit" cx="40" cy="100" r="10" />
+  <circle class="commit" cx="95" cy="100" r="10" />
+  <g class="later">
+    <path class="line" d="M95 100H260" />
+    <circle class="commit" cx="150" cy="100" r="10" />
+    <circle class="commit" cx="205" cy="100" r="10" />
+    <circle class="commit" cx="260" cy="100" r="10" />
+  </g>
+  <circle class="head" cx="260" cy="100" r="18" />
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <style>
+    /* Loaded as an image, so page styles do not reach in: the greys are mid-tones that read on both the light and the dark page. */
+    .part { fill: #808892; fill-opacity: 0.2; stroke: #808892; stroke-width: 3; }
+    .core { fill: #eb6c36; fill-opacity: 0.14; stroke: #eb6c36; }
+    /* Three touching blocks read as one long script until the outer two step aside. */
+    .first { animation: first 6s ease-in-out infinite; }
+    .last { animation: last 6s ease-in-out infinite; }
+    @keyframes first {
+      0%, 20% { transform: translate(0, 0); }
+      40%, 85% { transform: translate(-84px, 44px); }
+      100% { transform: translate(0, 0); }
+    }
+    @keyframes last {
+      0%, 20% { transform: translate(0, 0); }
+      40%, 85% { transform: translate(84px, -44px); }
+      100% { transform: translate(0, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .first { animation: none; transform: translate(-84px, 44px); }
+      .last { animation: none; transform: translate(84px, -44px); }
+    }
+  </style>
+  <rect class="part first" x="116" y="34" width="68" height="44" rx="4" />
+  <rect class="part core" x="116" y="78" width="68" height="44" rx="4" />
+  <rect class="part last" x="116" y="122" width="68" height="44" rx="4" />
+</svg>
