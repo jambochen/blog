@@ -1,0 +1,258 @@
+---
+// Each strip is the same stretch of memory; `OTHER` cells belong to something else, which is
+// why a vector cannot simply grow in place.
+const CELLS = 32;
+const OTHER = [3, 4];
+const START = 3;
+const LIMIT = 10;
+const cells = Array.from({ length: CELLS }, (_, index) => index);
+const rows = [
+	['append', 'Append'],
+	['prealloc', 'Preallocate'],
+];
+---
+
+<figure
+	class="growing"
+	data-other={OTHER.join(',')}
+	data-start={START}
+	data-limit={LIMIT}
+	aria-label="Growing a vector: appending moves and copies the whole vector each time, preallocating copies nothing"
+>
+	<div class="actions">
+		<button type="button" data-append>+ Append</button>
+		<button type="button" data-reset>Reset</button>
+		<span class="length">length <output data-out="length">{START}</output></span>
+	</div>
+
+	{
+		rows.map(([mode, name]) => (
+			<div class="row">
+				<span class="name">{name}</span>
+				<span class="copied">
+					copied <output data-out={mode}>0</output>
+				</span>
+				<div class="memory" data-mode={mode}>
+					{cells.map(() => (
+						<span class="cell" />
+					))}
+				</div>
+			</div>
+		))
+	}
+</figure>
+
+<style>
+	.growing {
+		--accent: #eb6c36;
+		margin-inline: 0;
+		font-family: var(--font-ui), var(--font-gothic), sans-serif;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	.actions button {
+		padding: 0.3rem 0.75rem;
+		border: 1px solid var(--muted);
+		border-radius: 4px;
+		background: none;
+		color: var(--ink);
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.actions button:hover:not(:disabled) {
+		border-color: var(--ink);
+		background: var(--surface);
+	}
+	.actions button:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+	.actions [data-reset] {
+		color: var(--muted);
+	}
+	.length,
+	.copied {
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+	.length {
+		margin-left: auto;
+	}
+	/* Fixed-width, right-aligned numbers, so nothing shifts as a value gains a digit. */
+	output {
+		display: inline-block;
+		min-width: 2ch;
+		color: var(--ink);
+		font-weight: 600;
+		text-align: right;
+	}
+	.row {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 0.25rem 1rem;
+		margin-top: 1rem;
+	}
+	.name {
+		font-weight: 600;
+	}
+	.memory {
+		grid-column: 1 / -1;
+		display: grid;
+		grid-template-columns: repeat(32, minmax(0, 1fr));
+		gap: 2px;
+		container-type: inline-size;
+	}
+	.cell {
+		display: grid;
+		place-items: center;
+		aspect-ratio: 1;
+		border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+		border-radius: 3px;
+		font-family: var(--font-code), monospace;
+		/* Scales with the strip so two digits still fit a cell on a phone. */
+		font-size: clamp(0.45rem, 1.7cqw, 0.75rem);
+		font-weight: 700;
+	}
+	.cell[data-state='other'] {
+		border: 1px solid color-mix(in srgb, var(--muted) 74%, var(--paper));
+		background: color-mix(in srgb, var(--muted) 15%, transparent);
+	}
+	.cell[data-state='reserved'] {
+		border: 1px dashed var(--ink);
+	}
+	.cell[data-state='value'],
+	.cell[data-state='copied'],
+	.cell[data-state='new'] {
+		border: 1px solid var(--ink);
+		background: var(--surface);
+	}
+	.cell[data-state='copied'] {
+		animation: copied 1.2s ease;
+	}
+	.cell[data-state='new'] {
+		animation: written 0.6s ease;
+	}
+	.cell[data-state='freed'] {
+		animation: freed 0.6s ease;
+	}
+	@keyframes copied {
+		0%,
+		60% {
+			border-color: var(--accent);
+			background: color-mix(in srgb, var(--accent) 22%, transparent);
+			color: var(--accent);
+		}
+	}
+	@keyframes written {
+		0% {
+			background: var(--ink);
+			color: var(--paper);
+		}
+	}
+	@keyframes freed {
+		0% {
+			border: 1px solid var(--accent);
+			background: color-mix(in srgb, var(--accent) 22%, transparent);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.cell {
+			animation: none !important;
+		}
+	}
+</style>
+
+<script>
+	for (const figure of document.querySelectorAll<HTMLElement>('.growing')) {
+		const other = new Set(figure.dataset.other!.split(',').map(Number));
+		const start = Number(figure.dataset.start);
+		const limit = Number(figure.dataset.limit);
+		const strip = (mode: string) => [...figure.querySelectorAll<HTMLElement>(`[data-mode="${mode}"] .cell`)];
+		const appendCells = strip('append');
+		const preallocCells = strip('prealloc');
+		const output = (name: string) => figure.querySelector<HTMLElement>(`[data-out="${name}"]`)!;
+		const appendButton = figure.querySelector<HTMLButtonElement>('[data-append]')!;
+
+		// The appended vector starts right before the foreign block, so it has no room to grow in place;
+		// the preallocated one is given its full length after that block.
+		const reservedFrom = Math.max(...other) + 1;
+		let length = start;
+		let offset = 0;
+		let copied = 0;
+
+		// First run of `size` free cells that does not touch the vector's current cells,
+		// which stay occupied until the copy is finished.
+		const findRoom = (size: number): number | undefined => {
+			const taken = (index: number) => other.has(index) || (index >= offset && index < offset + length);
+			for (let from = 0; from + size <= appendCells.length; from++) {
+				let fits = true;
+				for (let index = from; index < from + size; index++) {
+					if (taken(index)) {
+						fits = false;
+						break;
+					}
+				}
+				if (fits) return from;
+			}
+			return undefined;
+		};
+
+		const paint = (cell: HTMLElement, state: string, text = '') => {
+			// Detaching the attribute first restarts the animation when the same state is set twice in a row.
+			cell.removeAttribute('data-state');
+			cell.getBoundingClientRect();
+			cell.dataset.state = state;
+			cell.textContent = text;
+		};
+
+		const draw = (freedFrom?: number, freedLength = 0) => {
+			appendCells.forEach((cell, index) => {
+				const position = index - offset;
+				if (other.has(index)) paint(cell, 'other');
+				else if (position >= 0 && position < length) {
+					const fresh = freedFrom !== undefined;
+					paint(cell, !fresh ? 'value' : position === length - 1 ? 'new' : 'copied', String(position + 1));
+				} else if (freedFrom !== undefined && index >= freedFrom && index < freedFrom + freedLength) paint(cell, 'freed');
+				else paint(cell, 'empty');
+			});
+			preallocCells.forEach((cell, index) => {
+				const position = index - reservedFrom;
+				if (other.has(index)) paint(cell, 'other');
+				else if (position >= 0 && position < length) {
+					paint(cell, freedFrom !== undefined && position === length - 1 ? 'new' : 'value', String(position + 1));
+				} else if (position >= length && position < limit) paint(cell, 'reserved');
+				else paint(cell, 'empty');
+			});
+			output('length').textContent = String(length);
+			output('append').textContent = String(copied);
+			appendButton.disabled = length >= limit || findRoom(length + 1) === undefined;
+		};
+
+		appendButton.addEventListener('click', () => {
+			const room = findRoom(length + 1);
+			if (room === undefined) return;
+			const [oldOffset, oldLength] = [offset, length];
+			copied += length;
+			offset = room;
+			length++;
+			draw(oldOffset, oldLength);
+		});
+
+		figure.querySelector('[data-reset]')!.addEventListener('click', () => {
+			length = start;
+			offset = 0;
+			copied = 0;
+			draw();
+		});
+
+		draw();
+	}
+</script>

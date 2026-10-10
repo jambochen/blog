@@ -1,0 +1,244 @@
+---
+// The job is fixed at ten minutes so the bars share one axis with the worked example in the text.
+const TOTAL = 10;
+const serial = 1;
+const workers = 8;
+const ticks = [0, 2, 4, 6, 8, 10];
+---
+
+<figure
+	class="speedup"
+	style={`--total: ${TOTAL}; --serial: ${serial}; --workers: ${workers}`}
+	data-total={TOTAL}
+	aria-label="Speedup limit: set the serial minutes and the number of workers, and compare total run time"
+>
+	<div class="controls">
+		<label>
+			<span><i class="fixed"></i>Serial <output data-out="serial">{serial} min</output></span>
+			<input type="range" min="0" max="5" step="0.5" value={serial} data-in="serial" />
+		</label>
+		<label>
+			<span><i class="split"></i>Workers <output data-out="workers">{workers}</output></span>
+			<input type="range" min="1" max="32" step="1" value={workers} data-in="workers" />
+		</label>
+	</div>
+
+	<div class="chart">
+		<span class="name">1</span>
+		<div class="track">
+			<span class="bar fixed" data-bar="serial">1</span>
+			<span class="bar split whole" data-bar="whole">9</span>
+		</div>
+		<span class="name" data-out="name">{workers}</span>
+		<div class="track">
+			<span class="bar fixed" data-bar="serial">1</span>
+			<span class="bar split shared" data-bar="shared">1.1</span>
+		</div>
+		<span></span>
+		<div class="axis">
+			{ticks.map((tick) => <span style={`left: ${(tick / TOTAL) * 100}%`}>{tick}</span>)}
+			<em>min</em>
+		</div>
+	</div>
+
+	<p class="result" aria-live="polite">
+		<strong data-out="speedup">4.7×</strong>
+		<span data-out="limit">limit 10×</span>
+	</p>
+</figure>
+
+<style>
+	.speedup {
+		--accent: #eb6c36;
+		margin-inline: 0;
+		font-family: var(--font-ui), var(--font-gothic), sans-serif;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+	.controls {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+		gap: 0.75rem 2rem;
+		margin-bottom: 1.5rem;
+	}
+	.controls label {
+		display: grid;
+		gap: 0.25rem;
+		color: var(--muted);
+	}
+	/* Fixed-width, right-aligned numbers, so nothing shifts as a value gains or loses a digit. */
+	.controls output {
+		display: inline-block;
+		min-width: 2ch;
+		margin-left: 0.5rem;
+		color: var(--ink);
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+	}
+	.controls output[data-out='serial'] {
+		/* "0.5 min" */
+		min-width: 7ch;
+	}
+	.controls input {
+		width: 100%;
+		margin: 0;
+		accent-color: var(--accent);
+	}
+	.chart {
+		display: grid;
+		grid-template-columns: max-content minmax(0, 1fr);
+		align-items: center;
+		gap: 0.9rem 1rem;
+		/* Room for the axis unit, which hangs past the last tick. */
+		padding-right: 3rem;
+	}
+	.name {
+		min-width: 2ch;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+	}
+	.track {
+		display: flex;
+		gap: 3px;
+		height: 2rem;
+	}
+	/* The widths are computed here from the two custom properties, so the script only has to set those. */
+	.bar {
+		display: grid;
+		place-items: center;
+		overflow: hidden;
+		border: 1px solid;
+		border-radius: 4px;
+		font-weight: 600;
+		white-space: nowrap;
+		transition: width 0.25s ease;
+	}
+	.bar.fixed {
+		width: calc(var(--serial) / var(--total) * 100%);
+		border-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		color: var(--accent);
+	}
+	.bar.split {
+		border-color: var(--muted);
+		background: color-mix(in srgb, var(--muted) 15%, transparent);
+	}
+	.bar.whole {
+		width: calc((var(--total) - var(--serial)) / var(--total) * 100%);
+	}
+	.bar.shared {
+		width: calc((var(--total) - var(--serial)) / var(--workers) / var(--total) * 100%);
+	}
+	/* A bar too narrow for its label, or of zero length, shows no text or border. */
+	.bar[data-tight] {
+		color: transparent;
+	}
+	.bar[data-empty] {
+		border-width: 0;
+	}
+	.axis {
+		position: relative;
+		height: 1.6rem;
+		border-top: 1px solid var(--muted);
+		color: var(--muted);
+		font-family: var(--font-code), monospace;
+		font-size: 0.8rem;
+	}
+	.axis span {
+		position: absolute;
+		top: 0.3rem;
+		transform: translateX(-50%);
+	}
+	.axis span::before {
+		content: '';
+		position: absolute;
+		top: -0.3rem;
+		left: 50%;
+		height: 0.3rem;
+		border-left: 1px solid var(--muted);
+	}
+	.axis em {
+		position: absolute;
+		top: 0.3rem;
+		left: calc(100% + 1rem);
+		font-style: normal;
+	}
+	.result {
+		display: flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		margin: 0.5rem 0 0;
+		color: var(--muted);
+	}
+	.result strong {
+		font-variant-numeric: tabular-nums;
+		color: var(--ink);
+		font-size: 2rem;
+		line-height: 1.2;
+	}
+	/* The swatches beside the slider names double as the legend for the bars. */
+	.controls i {
+		display: inline-block;
+		width: 0.75rem;
+		height: 0.75rem;
+		margin-right: 0.5rem;
+		border: 1px solid;
+		border-radius: 2px;
+		vertical-align: -0.05rem;
+	}
+	.controls .fixed {
+		border-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+	}
+	.controls .split {
+		border-color: var(--muted);
+		background: color-mix(in srgb, var(--muted) 15%, transparent);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.bar {
+			transition: none;
+		}
+	}
+</style>
+
+<script>
+	const format = (value: number) => String(Number(value.toFixed(1)));
+
+	for (const figure of document.querySelectorAll<HTMLElement>('.speedup')) {
+		const total = Number(figure.dataset.total);
+		const input = (name: string) => figure.querySelector<HTMLInputElement>(`[data-in="${name}"]`)!;
+		const output = (name: string) => figure.querySelector<HTMLElement>(`[data-out="${name}"]`)!;
+		const bars = (name: string) => [...figure.querySelectorAll<HTMLElement>(`[data-bar="${name}"]`)];
+
+		const label = (bar: HTMLElement, minutes: number) => {
+			bar.textContent = format(minutes);
+			bar.toggleAttribute('data-empty', minutes === 0);
+			// Roughly the share of the axis a three-character label needs.
+			bar.toggleAttribute('data-tight', minutes / total < 0.04);
+		};
+
+		const update = () => {
+			const serial = Number(input('serial').value);
+			const workers = Number(input('workers').value);
+			const shared = (total - serial) / workers;
+			const speedup = total / (serial + shared);
+
+			figure.style.setProperty('--serial', String(serial));
+			figure.style.setProperty('--workers', String(workers));
+			output('serial').textContent = `${format(serial)} min`;
+			output('workers').textContent = String(workers);
+			output('name').textContent = String(workers);
+			bars('serial').forEach((bar) => label(bar, serial));
+			bars('whole').forEach((bar) => label(bar, total - serial));
+			bars('shared').forEach((bar) => label(bar, shared));
+
+			output('speedup').textContent = `${format(speedup)}×`;
+			output('limit').textContent = serial > 0 ? `limit ${format(total / serial)}×` : 'no limit';
+		};
+
+		figure.addEventListener('input', update);
+		update();
+	}
+</script>

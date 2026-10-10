@@ -1,0 +1,219 @@
+---
+const commits = ['clean', 'tidy', 'model', 'log', 'plot'];
+// The latest commit is left out of the choices: going back to it changes nothing.
+const choices = commits.slice(0, -1);
+const target = 1;
+---
+
+<figure
+	class="revert"
+	data-commits={commits.join(',')}
+	aria-label="Two ways to go back to an earlier commit: discarding removes every commit after it, keeping adds one new commit with the old contents"
+>
+	<div class="actions">
+		<span class="prompt">Revert to</span>
+		{
+			choices.map((name, index) => (
+				<button type="button" data-target={index} aria-pressed={index === target}>
+					{name}
+				</button>
+			))
+		}
+	</div>
+
+	<div class="row" data-mode="discard">
+		<span class="name">Discard</span>
+		<span class="lost">lost <output data-out="discard">{commits.length - 1 - target}</output></span>
+		<ol class="history">
+			{
+				commits.map((name, index) => (
+					<li data-index={index} data-state={index === target ? 'target' : index > target ? 'lost' : undefined}>
+						{name}
+					</li>
+				))
+			}
+		</ol>
+	</div>
+
+	<div class="row" data-mode="keep">
+		<span class="name">Keep</span>
+		<span class="lost">lost <output>0</output></span>
+		<ol class="history">
+			{
+				commits.map((name, index) => (
+					<li data-index={index} data-state={index === target ? 'target' : undefined}>
+						{name}
+					</li>
+				))
+			}
+			<li data-state="added" data-out="added">= {commits[target]}</li>
+		</ol>
+	</div>
+</figure>
+
+<style>
+	.revert {
+		--accent: #eb6c36;
+		margin-inline: 0;
+		font-family: var(--font-ui), var(--font-gothic), sans-serif;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+	.actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+	.prompt {
+		margin-right: 0.25rem;
+		color: var(--muted);
+	}
+	.actions button {
+		padding: 0.3rem 0.75rem;
+		border: 1px solid var(--muted);
+		border-radius: 4px;
+		background: none;
+		color: var(--ink);
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.actions button:hover {
+		border-color: var(--ink);
+		background: var(--surface);
+	}
+	.actions button[aria-pressed='true'] {
+		border-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		color: var(--accent);
+	}
+	.row {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 0.4rem 1rem;
+		margin-top: 1.25rem;
+	}
+	.name {
+		font-weight: 600;
+	}
+	.lost {
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+	}
+	/* Fixed-width, right-aligned numbers, so nothing shifts as a value changes. */
+	output {
+		display: inline-block;
+		min-width: 2ch;
+		color: var(--ink);
+		font-weight: 600;
+		text-align: right;
+	}
+	.history {
+		grid-column: 1 / -1;
+		display: grid;
+		/* Six equal slots in both rows, so the same commit lines up between them. */
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 1rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.history li {
+		position: relative;
+		/* Cancels the spacing the article styles put between list items. */
+		margin: 0;
+		padding: 0.45rem 0.25rem;
+		border: 1px solid var(--ink);
+		border-radius: 6px;
+		background: var(--surface);
+		font-family: var(--font-code), monospace;
+		font-size: 0.8rem;
+		font-weight: 700;
+		text-align: center;
+		white-space: nowrap;
+		transition:
+			opacity 0.25s,
+			border-color 0.25s,
+			background 0.25s,
+			color 0.25s;
+	}
+	/* The line joining a commit to the one before it. */
+	.history li + li::before {
+		content: '';
+		position: absolute;
+		top: 50%;
+		right: 100%;
+		width: 1rem;
+		border-top: 1px solid var(--muted);
+	}
+	.history [data-state='target'] {
+		border-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		color: var(--accent);
+	}
+	.history [data-state='lost'] {
+		border-style: dashed;
+		border-color: var(--muted);
+		background: none;
+		color: var(--muted);
+		opacity: 0.45;
+		text-decoration: line-through;
+	}
+	.history [data-state='lost']::before {
+		border-top-style: dashed;
+	}
+	.history [data-state='added'] {
+		border-color: var(--accent);
+		background: var(--accent);
+		color: var(--paper);
+	}
+	.history [data-state='added'][data-fresh] {
+		animation: added 0.5s ease;
+	}
+	@keyframes added {
+		from {
+			opacity: 0;
+			transform: translateX(-0.75rem);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.history li {
+			transition: none;
+			animation: none !important;
+		}
+	}
+</style>
+
+<script>
+	for (const figure of document.querySelectorAll<HTMLElement>('.revert')) {
+		const commits = figure.dataset.commits!.split(',');
+		const buttons = [...figure.querySelectorAll<HTMLButtonElement>('[data-target]')];
+		const added = figure.querySelector<HTMLElement>('[data-out="added"]')!;
+		const lost = figure.querySelector<HTMLElement>('[data-out="discard"]')!;
+
+		const choose = (target: number) => {
+			for (const button of buttons) {
+				button.setAttribute('aria-pressed', String(Number(button.dataset.target) === target));
+			}
+			for (const item of figure.querySelectorAll<HTMLElement>('[data-index]')) {
+				const index = Number(item.dataset.index);
+				const discarding = item.closest('[data-mode]')!.getAttribute('data-mode') === 'discard';
+				if (index === target) item.dataset.state = 'target';
+				else if (discarding && index > target) item.dataset.state = 'lost';
+				else item.removeAttribute('data-state');
+			}
+			lost.textContent = String(commits.length - 1 - target);
+			added.textContent = `= ${commits[target]}`;
+			// Detaching the attribute first restarts the entrance animation on every choice.
+			added.removeAttribute('data-fresh');
+			added.getBoundingClientRect();
+			added.setAttribute('data-fresh', '');
+		};
+
+		for (const button of buttons) {
+			button.addEventListener('click', () => choose(Number(button.dataset.target)));
+		}
+	}
+</script>
