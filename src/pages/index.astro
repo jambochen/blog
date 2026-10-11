@@ -27,7 +27,7 @@ const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? '
 
 		{
 			allSeries.map((series) => (
-				<Shelf name={series.name} href={`/series/${series.slug}/`} episodes={series.episodes} tone={series.tone} />
+				<Shelf name={series.name} href={`/blog/${series.slug}/`} episodes={series.episodes} tone={series.tone} />
 			))
 		}
 

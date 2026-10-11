@@ -18,7 +18,7 @@ const { title, description, pubDate, updatedDate, tags } = episode.post.data;
 		{
 			series && (
 				<p class="series">
-					<a href={`/series/${series.slug}/`}>{series.name}</a>
+					<a href={`/blog/${series.slug}/`}>{series.name}</a>
 					<span>{seriesPositionLabel(series)}</span>
 				</p>
 			)

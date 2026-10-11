@@ -1,0 +1,7 @@
+{
+	"coding-agent": {
+		"name": "從網頁對話到 coding agent",
+		"description": "寫給以 R 或 Python 做資料分析與科學計算的學生與研究者：從網頁對話換到 coding agent 所需的環境設定與 CS 背景。",
+		"tone": "page"
+	}
+}

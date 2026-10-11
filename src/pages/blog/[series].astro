@@ -20,16 +20,22 @@ const { series } = Astro.props;
 
 <Base
 	title={`${series.name} | ${SITE_TITLE}`}
-	description={`系列「${series.name}」，共 ${series.episodes.length} 篇。`}
+	description={series.description ?? `系列「${series.name}」，共 ${series.episodes.length} 篇。`}
 >
 	<div class="wrap page">
 		<h1>{series.name}</h1>
+		{series.description && <p class="about">{series.description}</p>}
 		<p class="count">共 {series.episodes.length} 篇，依閱讀順序排列。</p>
 		<EpisodeList episodes={series.episodes} showSeries={false} />
 	</div>
 </Base>
 
 <style>
+	.about {
+		max-width: var(--measure);
+		margin: 0 0 0.5rem;
+		font-size: 1.125rem;
+	}
 	.count {
 		margin: 0 0 2rem;
 		color: var(--muted);

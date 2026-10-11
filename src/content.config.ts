@@ -1,5 +1,5 @@
 import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
+import { file, glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
 // Load Markdown and MDX files in the `src/content/blog/` directory.
@@ -28,12 +28,21 @@ const blog = defineCollection({
 			// A small looping animation for the post's tile on the home page.
 			thumbnail: z.optional(image()),
 			tags: z.array(z.string()).default([]),
-			// Posts sharing a series name are numbered within it; posts without one are standalone.
-			series: z.string().optional(),
+			// Place within the series, which is the folder the post is in; see `seriesOf`.
 			seriesOrder: z.number().optional(),
 			// Drafts render in `astro dev` only.
 			draft: z.boolean().default(false),
 		}),
 });
 
-export const collections = { blog };
+const series = defineCollection({
+	loader: file('./src/content/series.json'),
+	schema: z.object({
+		name: z.string(),
+		description: z.string().optional(),
+		// Each names a `[data-tone]` rule in `global.css`; `page` leaves the colour block unfilled.
+		tone: z.enum(['page', 'indigo', 'vermilion', 'moss']),
+	}),
+});
+
+export const collections = { blog, series };

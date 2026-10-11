@@ -42,6 +42,7 @@ function plainText(markdown: string): string {
 }
 
 const CONTENT_DIR = resolve('src/content/blog');
+const SERIES_FILE = resolve('src/content/series.json');
 const WIKILINK = /\[\[([^[\]|#]*)(?:#([^[\]|]+))?(?:\|([^[\]]+))?\]\]/g;
 
 const failures: string[] = [];
@@ -102,20 +103,19 @@ function readPosts(isBuild: boolean): Post[] {
 		if (!extension) continue;
 		const path = join(CONTENT_DIR, entry);
 		const { frontmatter, content } = parseFrontmatter(readFileSync(path, 'utf8'));
-		const id =
-			frontmatter.slug ??
-			entry
-				.slice(0, -extension.length)
-				.split(/[\\/]/)
-				.map((segment) => slugify(segment))
-				.join('/');
+		const segments = entry
+			.slice(0, -extension.length)
+			.split(/[\\/]/)
+			.map((segment) => slugify(segment));
+		const id = frontmatter.slug ?? segments.join('/');
 		posts.push({
 			path,
 			title: String(frontmatter.title),
 			description: String(frontmatter.description ?? ''),
 			url: `/blog/${id}/`,
 			draft: frontmatter.draft === true,
-			series: frontmatter.series,
+			// The folder, as in `seriesOf`.
+			series: segments.length > 1 ? segments[0] : undefined,
 			seriesOrder: frontmatter.seriesOrder,
 			pubDate: new Date(frontmatter.pubDate).valueOf(),
 			sections: sectionsOf(content),
@@ -177,7 +177,9 @@ export function remarkWikilinks() {
 			if (post === self) return '本篇';
 			if (!post.episode) return '';
 			const position = `第 ${post.episode} 篇`;
-			return post.series === self?.series ? position : `${post.series} · ${position}`;
+			if (post.series === self?.series) return position;
+			const names: Record<string, { name: string }> = JSON.parse(readFileSync(SERIES_FILE, 'utf8'));
+			return `${names[post.series ?? '']?.name ?? post.series} · ${position}`;
 		};
 
 		const linkFor = (match: RegExpExecArray): MdastNode => {
