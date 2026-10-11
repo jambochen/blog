@@ -56,6 +56,7 @@
 		color: var(--muted);
 	}
 
+	.xref-card-label:empty,
 	.xref-card-note:empty {
 		display: none;
 	}
@@ -71,9 +72,9 @@
 		const EDGE = 12;
 
 		const open = (link: HTMLAnchorElement) => {
-			const { episode, section, title: postTitle = '', note: text = '' } = link.dataset;
-			const position = episode ? `第 ${episode} 篇` : '本篇';
-			if (label) label.textContent = section ? `${position} · ${postTitle}` : position;
+			const { place = '', section, title: postTitle = '', note: text = '' } = link.dataset;
+			const inOtherPost = section && place !== '本篇';
+			if (label) label.textContent = [place, inOtherPost && postTitle].filter(Boolean).join(' · ');
 			if (title) title.textContent = section ?? postTitle;
 			if (note) note.textContent = text;
 

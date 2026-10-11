@@ -171,6 +171,15 @@ export function remarkWikilinks() {
 		}
 		const self = posts.find((post) => post.path === file.path);
 
+		// An episode number means little without its series, so the series is
+		// named unless the reader is already inside it.
+		const placeOf = (post: Post): string => {
+			if (post === self) return '本篇';
+			if (!post.episode) return '';
+			const position = `第 ${post.episode} 篇`;
+			return post.series === self?.series ? position : `${post.series} · ${position}`;
+		};
+
 		const linkFor = (match: RegExpExecArray): MdastNode => {
 			const [source, title = '', heading, label] = match;
 
@@ -195,7 +204,7 @@ export function remarkWikilinks() {
 						'data-title': post.title,
 						'data-note': section ? section.excerpt : post.description,
 						...(section && { 'data-section': section.text }),
-						...(post !== self && post.episode && { 'data-episode': String(post.episode) }),
+						'data-place': placeOf(post),
 					},
 				},
 			};
