@@ -3,6 +3,7 @@ import type { MarkdownHeading } from 'astro';
 import MermaidDiagrams from '../components/MermaidDiagrams.astro';
 import PostHeader from '../components/PostHeader.astro';
 import PostOutline from '../components/PostOutline.astro';
+import XrefPreview from '../components/XrefPreview.astro';
 import { SITE_TITLE } from '../consts';
 import type { Episode } from '../lib/posts';
 import Base from './Base.astro';
@@ -31,6 +32,7 @@ const { title, description } = episode.post.data;
 			</aside>
 		</div>
 	</article>
+	<XrefPreview />
 
 	{
 		episode.series && seriesEpisodes && (

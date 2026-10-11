@@ -1,0 +1,104 @@
+<div class="xref-card" role="tooltip" hidden>
+	<p class="xref-card-label"></p>
+	<p class="xref-card-title"></p>
+	<p class="xref-card-note"></p>
+</div>
+
+<style is:global>
+	.xref-card {
+		position: absolute;
+		z-index: 20;
+		width: min(20rem, calc(100vw - 1.5rem));
+		padding: 0.7rem 0.9rem 0.8rem;
+		border: 1px solid var(--ink);
+		background: var(--paper);
+		box-shadow: 4px 4px 0 var(--rule);
+		pointer-events: none;
+		opacity: 0;
+		transform: translateY(4px);
+	}
+
+	.xref-card.is-open {
+		opacity: 1;
+		transform: none;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.xref-card {
+			transition:
+				opacity 120ms ease-out,
+				transform 120ms ease-out;
+		}
+	}
+
+	.xref-card p {
+		margin: 0;
+	}
+
+	.xref-card-label {
+		font-family: var(--font-ui), var(--font-gothic), sans-serif;
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--violet);
+	}
+
+	.xref-card-title {
+		font-family: var(--font-mincho);
+		font-weight: 900;
+		line-height: 1.4;
+	}
+
+	.xref-card-note {
+		margin-top: 0.3rem !important;
+		font-size: 0.82rem;
+		line-height: 1.6;
+		color: var(--muted);
+	}
+
+	.xref-card-note:empty {
+		display: none;
+	}
+</style>
+
+<script>
+	const card = document.querySelector<HTMLElement>('.xref-card');
+	const canHover = matchMedia('(hover: hover)').matches;
+
+	if (card && canHover) {
+		const [label, title, note] = [...card.children] as HTMLElement[];
+		const GAP = 8;
+		const EDGE = 12;
+
+		const open = (link: HTMLAnchorElement) => {
+			const { episode, section, title: postTitle = '', note: text = '' } = link.dataset;
+			const position = episode ? `第 ${episode} 篇` : '本篇';
+			if (label) label.textContent = section ? `${position} · ${postTitle}` : position;
+			if (title) title.textContent = section ?? postTitle;
+			if (note) note.textContent = text;
+
+			card.hidden = false;
+			// A link wrapped over two lines has one box per line; the card hangs from the first.
+			const anchor = link.getClientRects()[0] ?? link.getBoundingClientRect();
+			const { width, height } = card.getBoundingClientRect();
+			const left = Math.min(Math.max(anchor.left, EDGE), innerWidth - width - EDGE);
+			const below = anchor.bottom + GAP;
+			const top = below + height > innerHeight ? anchor.top - GAP - height : below;
+			card.style.left = `${left + scrollX}px`;
+			card.style.top = `${top + scrollY}px`;
+			card.classList.add('is-open');
+		};
+
+		const close = () => {
+			card.classList.remove('is-open');
+			card.hidden = true;
+		};
+
+		for (const link of document.querySelectorAll<HTMLAnchorElement>('.prose a.xref')) {
+			link.addEventListener('mouseenter', () => open(link));
+			link.addEventListener('focus', () => open(link));
+			link.addEventListener('mouseleave', close);
+			link.addEventListener('blur', close);
+		}
+	}
+</script>

@@ -14,14 +14,31 @@ interface MdastNode {
 interface Section {
 	text: string;
 	slug: string;
+	excerpt: string;
 }
 
 interface Post {
 	path: string;
 	title: string;
+	description: string;
 	url: string;
 	draft: boolean;
+	series?: string;
+	seriesOrder?: number;
+	pubDate: number;
+	// Position in its series, counted over the posts a reader can open.
+	episode?: number;
 	sections: Section[];
+}
+
+const EXCERPT_LENGTH = 80;
+
+function plainText(markdown: string): string {
+	return markdown
+		.replace(/\[\[(?:[^[\]|]*\|)?([^[\]|]*)\]\]/g, (_, shown: string) => shown.replace(/^.*#/, ''))
+		.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+		.replace(/^(?:[-*]|\d+\.)\s+/, '')
+		.replace(/[`*]/g, '');
 }
 
 const CONTENT_DIR = resolve('src/content/blog');
@@ -58,16 +75,27 @@ function sectionsOf(body: string): Section[] {
 		}
 		if (fence) continue;
 		const heading = /^#{1,6}\s+(.*\S)\s*$/.exec(line)?.[1];
-		if (!heading) continue;
-		const text = heading.replaceAll('`', '');
-		sections.push({ text, slug: slugger.slug(text.replace(/\$[^$]*\$/g, '')) });
+		if (heading) {
+			const text = heading.replaceAll('`', '');
+			sections.push({ text, slug: slugger.slug(text.replace(/\$[^$]*\$/g, '')), excerpt: '' });
+			continue;
+		}
+		const section = sections.at(-1);
+		// Lines opening with these characters are components, imports, tables,
+		// images, quotes or display math, none of which read as a summary.
+		if (!section || section.excerpt || !line.trim() || /^\s*(?:[<|!>{$]|import |export )/.test(line)) {
+			continue;
+		}
+		const prose = plainText(line.trim());
+		section.excerpt =
+			prose.length > EXCERPT_LENGTH ? `${prose.slice(0, EXCERPT_LENGTH)}…` : prose;
 	}
 	return sections;
 }
 
 // Read on every call rather than once: in `astro dev` a renamed title or
 // heading has to reach the posts that refer to it without a restart.
-function readPosts(): Post[] {
+function readPosts(isBuild: boolean): Post[] {
 	const posts: Post[] = [];
 	for (const entry of readdirSync(CONTENT_DIR, { recursive: true, encoding: 'utf8' })) {
 		const extension = /\.mdx?$/.exec(entry)?.[0];
@@ -84,10 +112,36 @@ function readPosts(): Post[] {
 		posts.push({
 			path,
 			title: String(frontmatter.title),
+			description: String(frontmatter.description ?? ''),
 			url: `/blog/${id}/`,
 			draft: frontmatter.draft === true,
+			series: frontmatter.series,
+			seriesOrder: frontmatter.seriesOrder,
+			pubDate: new Date(frontmatter.pubDate).valueOf(),
 			sections: sectionsOf(content),
 		});
+	}
+
+	// Has to number episodes the way `getEpisodes` does, or the number beside a
+	// link would disagree with the one on the page it opens.
+	const series = new Map<string, Post[]>();
+	for (const post of posts) {
+		if (!post.series || (isBuild && post.draft)) continue;
+		series.set(post.series, [...(series.get(post.series) ?? []), post]);
+	}
+	for (const members of series.values()) {
+		members
+			.sort((a, b) => {
+				if (a.seriesOrder !== undefined && b.seriesOrder !== undefined) {
+					return a.seriesOrder - b.seriesOrder;
+				}
+				if (a.seriesOrder !== undefined) return -1;
+				if (b.seriesOrder !== undefined) return 1;
+				return a.pubDate - b.pubDate;
+			})
+			.forEach((post, index) => {
+				post.episode = index + 1;
+			});
 	}
 	return posts;
 }
@@ -106,7 +160,7 @@ export function remarkWikilinks() {
 			return new Error(message);
 		};
 
-		const posts = readPosts();
+		const posts = readPosts(isBuild);
 		const byTitle = new Map<string, Post>();
 		for (const post of posts) {
 			const other = byTitle.get(post.title);
@@ -135,7 +189,15 @@ export function remarkWikilinks() {
 				type: 'link',
 				url: (post === self && section ? '' : post.url) + (section ? `#${section.slug}` : ''),
 				children: [text],
-				data: { hProperties: { className: ['xref'] } },
+				data: {
+					hProperties: {
+						className: ['xref'],
+						'data-title': post.title,
+						'data-note': section ? section.excerpt : post.description,
+						...(section && { 'data-section': section.text }),
+						...(post !== self && post.episode && { 'data-episode': String(post.episode) }),
+					},
+				},
 			};
 		};
 
