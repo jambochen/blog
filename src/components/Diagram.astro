@@ -19,7 +19,7 @@ const { source, alt } = Astro.props;
 
 <style>
 	.diagram {
-		--diagram-accent: #eb6c36;
+		--diagram-accent: var(--accent);
 		--diagram-raised: #fff;
 		margin-inline: 0;
 	}
@@ -41,7 +41,7 @@ const { source, alt } = Astro.props;
 		outline: 2px solid var(--accent);
 		outline-offset: 4px;
 	}
-	/* The figures are drawn 960 units wide with 12-unit text, which the text column shrinks;
+	/* The figures are drawn about 900 units wide with small text, which the text column shrinks;
 	   the dialog shows them at drawn size and scrolls sideways on screens narrower than that. */
 	.diagram-zoom {
 		width: min(64rem, 100vw - 2rem);
