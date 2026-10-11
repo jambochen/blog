@@ -11,11 +11,10 @@ interface Props {
 	episode: Episode;
 	previous?: Episode;
 	next?: Episode;
-	seriesEpisodes?: Episode[];
 	headings: MarkdownHeading[];
 }
 
-const { episode, previous, next, seriesEpisodes, headings } = Astro.props;
+const { episode, previous, next, headings } = Astro.props;
 const { title, description } = episode.post.data;
 ---
 
@@ -31,28 +30,6 @@ const { title, description } = episode.post.data;
 			</aside>
 		</div>
 	</article>
-
-	{
-		episode.series && seriesEpisodes && (
-			<nav class="wrap after contents" aria-label="系列目錄">
-				<h2>
-					<a href={`/series/${episode.series.slug}/`}>{episode.series.name}</a>
-					<span class="contents-total">共 {episode.series.total} 篇</span>
-				</h2>
-				<ol>
-					{seriesEpisodes.map((item) => (
-						<li>
-							{item.post.id === episode.post.id ? (
-								<span aria-current="page">{item.post.data.title}（本篇）</span>
-							) : (
-								<a href={`/blog/${item.post.id}/`}>{item.post.data.title}</a>
-							)}
-						</li>
-					))}
-				</ol>
-			</nav>
-		)
-	}
 
 	{
 		(next || previous) && (
@@ -92,39 +69,6 @@ const { title, description } = episode.post.data;
 	}
 	.after {
 		margin-top: 4rem;
-	}
-	.contents + .turn {
-		margin-top: 2.5rem;
-	}
-	.contents h2 {
-		margin: 0 0 0.5rem;
-		font-family: var(--font-mincho);
-		font-size: 1.25rem;
-		font-weight: 900;
-		line-height: 1.4;
-	}
-	.contents h2 a {
-		color: inherit;
-	}
-	.contents-total {
-		margin-left: 0.75rem;
-		color: var(--muted);
-		font-size: 0.9rem;
-		font-weight: 400;
-	}
-	.contents ol {
-		max-width: var(--measure);
-		margin: 0;
-		padding-left: 1.75rem;
-	}
-	.contents li {
-		padding-block: 0.2rem;
-	}
-	.contents li::marker {
-		color: var(--muted);
-	}
-	.contents [aria-current] {
-		font-weight: 700;
 	}
 	.turn a {
 		display: grid;
