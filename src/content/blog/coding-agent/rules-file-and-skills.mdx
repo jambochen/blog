@@ -6,13 +6,7 @@ seriesOrder: 5
 draft: true
 ---
 
-[[純文字工作法]]一篇介紹了 Markdown，本篇介紹兩種以 Markdown 寫成、給 agent 讀的檔案：規範檔記錄專案的規矩，每次對話自動載入；skill 是事先寫好、可重複使用的 prompt，各針對一類任務，換了專案也用得上。
-
-## 每次對話都須重述的內容
-
-[[LLM 與 agent 的運作原理]]一篇提過，LLM 本身沒有跨對話的記憶，上一個對話裡交代過的事，agent 一概不記得。於是每開一個新對話，同樣的話便得再講一次：資料放在哪個資料夾、慣用哪些套件、圖要什麼風格、哪些檔案不可更動。如果漏講，agent 便依自己的猜測行事，比如換用一套沒用過的繪圖套件，或把輸出的圖存到意料之外的位置，使用者事後再逐一糾正。
-
-這些內容 agent 無法從檔案中看出，因為它們是使用者的習慣與決定，並未寫在任何一處。既然每次都相同，便該寫成一份檔案放在專案裡，由 agent 在每個對話開始時自行讀取，這就是規範檔。
+在網頁上每開一個新對話，事情都得重新講過。雖然 Agent 能自行查看檔案，但有些規矩從檔案裡讀不出來，例如慣用哪些套件、圖要什麼風格、哪些檔案不可更動。這些規矩是使用者的習慣與決定，並未寫在任何一處；既然每次都相同，便該寫成一份檔案放在專案裡，由 agent 在每個對話開始時自行讀取，這就是規範檔。
 
 ## 規範檔的作用與位置
 
@@ -125,7 +119,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 
 兩相比較，Claude 在社群支援上比 Codex 完善。社群的作者多以 Claude 為先，`mattpocock-skills` 即只做了 Claude 的 plugin，Codex 是讀取同一份寫給 Claude 的清單才裝得上。另有跨工具通用的安裝器 [skills.sh](https://skills.sh)，以 `npx` 執行，須先安裝 Node.js，而本系列的主線不安裝 Node.js，因此不採用。
 
-### 試用 `mattpocock-skills`
+### `mattpocock-skills`
 
 `mattpocock-skills` 是 Matt Pocock 公開的一組 skill，原為軟體開發而寫，其中數個與 code 的種類無關，資料分析也用得上。初次試用建議指名喚用，才能確知用上的是哪一個；以 plugin 安裝的 skill，清單裡的名稱帶有 plugin 的前綴，例如 `/mattpocock-skills:grilling`。
 
@@ -173,7 +167,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 檢視這次對話，指出規範檔有哪些地方該增刪。
 ```
 
-### `caveman`：以極簡回覆節省用量
+### `caveman`
 
 [`caveman`](https://github.com/JuliusBrussee/caveman) 是專為節省用量而寫的 skill，作用是讓 agent 以極簡的句子回覆，省去客套與重複的說明，技術內容不變。[[寫 prompt 與選模型]]一篇提過，用量取決於送進與送出 LLM 的 token 總數；`caveman` 減少的是 agent 輸出的文字，對於讀檔與工具輸出所佔的用量沒有影響，因此節省的幅度視工作的性質而定，對話多而讀檔少時較為明顯。
 
