@@ -20,7 +20,7 @@ const { title, description } = episode.post.data;
 ---
 
 <Base title={`${title} | ${SITE_TITLE}`} description={description}>
-	<article data-pagefind-body>
+	<article data-pagefind-body data-tone={episode.series?.tone}>
 		<PostHeader episode={episode} />
 		<div class="wrap body">
 			<div class="prose">
@@ -147,6 +147,6 @@ const { title, description } = episode.post.data;
 		font-weight: 700;
 	}
 	.turn a:hover .turn-title {
-		color: var(--violet);
+		color: var(--accent);
 	}
 </style>

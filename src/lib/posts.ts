@@ -2,9 +2,14 @@ import { type CollectionEntry, getCollection } from 'astro:content';
 
 type Post = CollectionEntry<'blog'>;
 
+// Reused from the start once there are more series than tones.
+const TONES = ['page', 'indigo', 'vermilion', 'moss'] as const;
+export type Tone = (typeof TONES)[number];
+
 export interface SeriesPosition {
 	name: string;
 	slug: string;
+	tone: Tone;
 	number: number;
 	total: number;
 }
@@ -18,6 +23,7 @@ export interface Episode {
 export interface Series {
 	name: string;
 	slug: string;
+	tone: Tone;
 	episodes: Episode[];
 }
 
@@ -53,16 +59,20 @@ export async function getEpisodes(): Promise<Episode[]> {
 	}
 
 	const positions = new Map<string, SeriesPosition>();
-	for (const [name, seriesPosts] of members) {
+	// `members` lists series by their oldest post, so a series keeps its tone when a newer series is added.
+	[...members].forEach(([name, seriesPosts], seriesIndex) => {
+		// The `!` is safe: the index is taken modulo the array's own length.
+		const tone = TONES[seriesIndex % TONES.length]!;
 		seriesPosts.sort(bySeriesOrder).forEach((post, index) => {
 			positions.set(post.id, {
 				name,
 				slug: seriesSlug(name),
+				tone,
 				number: index + 1,
 				total: seriesPosts.length,
 			});
 		});
-	}
+	});
 
 	return posts.map((post) => ({ post, series: positions.get(post.id) }));
 }
@@ -71,8 +81,8 @@ export function groupSeries(episodes: Episode[]): Series[] {
 	const groups = new Map<string, Series>();
 	for (const episode of episodes) {
 		if (!episode.series) continue;
-		const { name, slug } = episode.series;
-		const group = groups.get(slug) ?? { name, slug, episodes: [] };
+		const { name, slug, tone } = episode.series;
+		const group = groups.get(slug) ?? { name, slug, tone, episodes: [] };
 		group.episodes.push(episode);
 		groups.set(slug, group);
 	}

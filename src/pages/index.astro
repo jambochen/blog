@@ -1,12 +1,10 @@
 ---
-import EpisodeGrid from '../components/EpisodeGrid.astro';
+import Shelf from '../components/Shelf.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
 import { countWords, getEpisodes, groupSeries } from '../lib/posts';
 
 const STANDALONE_COUNT = 8;
-// Two rows of the first grid are visible before scrolling on a desktop viewport.
-const ABOVE_FOLD_COUNT = 6;
 
 const episodes = await getEpisodes();
 // `episodes` is oldest first, so a series' place in it follows its newest episode once reversed: the series written most recently leads.
@@ -22,37 +20,27 @@ const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? '
 			{SITE_DESCRIPTION}
 			{episodes.length > 0 && (
 				<span class="stats">
-					{episodes.length} 篇 · {words >= 10000 ? `${(words / 10000).toFixed(1)} 萬字` : `${words} 字`}
+					{episodes.length} 篇　{words >= 10000 ? `${(words / 10000).toFixed(1)} 萬字` : `${words} 字`}
 				</span>
 			)}
 		</p>
 
 		{
-			allSeries.map((series, index) => (
-				<section>
-					<h2>
-						<a href={`/series/${series.slug}/`}>{series.name}</a>
-						<span class="count">共 {series.episodes.length} 篇</span>
-					</h2>
-					<EpisodeGrid episodes={series.episodes} eagerCount={index === 0 ? ABOVE_FOLD_COUNT : 0} />
-				</section>
+			allSeries.map((series) => (
+				<Shelf name={series.name} href={`/series/${series.slug}/`} episodes={series.episodes} tone={series.tone} />
 			))
 		}
 
 		{
 			standalone.length > 0 && (
-				<section>
-					<h2>單篇文章</h2>
-					<EpisodeGrid
-						episodes={standalone.slice(0, STANDALONE_COUNT)}
-						eagerCount={allSeries.length === 0 ? ABOVE_FOLD_COUNT : 0}
-					/>
-					{standalone.length > STANDALONE_COUNT && (
-						<p class="all">
-							<a href="/blog">看全部 {episodes.length} 篇文章</a>
-						</p>
-					)}
-				</section>
+				<Shelf name="單篇文章" href="/blog" episodes={standalone.slice(0, STANDALONE_COUNT)} />
+			)
+		}
+		{
+			standalone.length > STANDALONE_COUNT && (
+				<p class="all">
+					<a href="/blog">看全部 {episodes.length} 篇文章</a>
+				</p>
 			)
 		}
 
@@ -69,7 +57,7 @@ const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? '
 <style>
 	.intro {
 		max-width: var(--measure);
-		margin: 0 0 3rem;
+		margin: 0 0 2.5rem;
 		color: var(--muted);
 		font-size: 1.125rem;
 	}
@@ -80,29 +68,8 @@ const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? '
 		font-size: 0.9rem;
 		font-variant-numeric: tabular-nums;
 	}
-	section + section {
-		margin-top: 3.5rem;
-	}
-	h2 {
-		margin: 0 0 1rem;
-		font-family: var(--font-mincho);
-		font-weight: 900;
-		font-size: 1.563rem;
-		line-height: 1.3;
-	}
-	h2 a {
-		color: inherit;
-		text-decoration: none;
-	}
-	h2 a:hover {
-		color: var(--violet);
-	}
-	.count {
-		margin-left: 0.75rem;
-		color: var(--muted);
-		font-family: var(--font-gothic);
-		font-size: 0.9rem;
-		font-weight: 400;
+	.page > :global(.shelf + .shelf) {
+		margin-top: 1.5rem;
 	}
 	.all {
 		margin: 1.5rem 0 0;
