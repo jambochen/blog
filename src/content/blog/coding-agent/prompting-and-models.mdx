@@ -7,7 +7,7 @@ seriesOrder: 3
 draft: true
 ---
 
-〈LLM 與 agent 的運作原理〉一篇說明了 agent 為何會遺忘、會編造，以及用量為何消耗得快，這些都出自 LLM 與框架的運作方式，無法根除。然而同一個 agent，指令怎麼寫、資料以什麼形式交給它、選用哪一個模型，結果與用量都會有明顯的差別，這些則是使用者可以決定的。
+[[LLM 與 agent 的運作原理]]一篇說明了 agent 為何會遺忘、會編造，以及用量為何消耗得快，這些都出自 LLM 與框架的運作方式，無法根除。然而同一個 agent，指令怎麼寫、資料以什麼形式交給它、選用哪一個模型，結果與用量都會有明顯的差別，這些則是使用者可以決定的。
 
 模型愈來愈強，以往須用上許多技巧才做得好的事，如今往往一句話便能做到，許多人也因此不再重視自己下指令的方式。指令寫得粗略仍做得成，靠的是模型本身夠強；但模型的進步是同時提高了下限與上限，需求和問題寫得愈準確，結果才愈接近模型的上限。
 
@@ -15,14 +15,14 @@ draft: true
 
 ## Prompt 與它的別名
 
-〈LLM 與 agent 的運作原理〉一篇已說明，LLM 所做的事是讀進一段文字，再接著往下寫，讀進去的這段文字便稱為 prompt。Prompt 在英文裡是提詞的意思，劇場裡替忘詞的演員提一句開頭，演員便能接著演下去。LLM 最初的用法正是如此，使用者寫下一段開頭，由它續寫或補完。對話是其後才有的形態，做法是將雙方說過的話排成一份標明誰說了什麼的紀錄，交給 LLM 續寫下一句回答，本質上仍是續寫，prompt 一詞也就沿用了下來。
+[[LLM 與 agent 的運作原理]]一篇已說明，LLM 所做的事是讀進一段文字，再接著往下寫，讀進去的這段文字便稱為 prompt。Prompt 在英文裡是提詞的意思，劇場裡替忘詞的演員提一句開頭，演員便能接著演下去。LLM 最初的用法正是如此，使用者寫下一段開頭，由它續寫或補完。對話是其後才有的形態，做法是將雙方說過的話排成一份標明誰說了什麼的紀錄，交給 LLM 續寫下一句回答，本質上仍是續寫，prompt 一詞也就沿用了下來。
 
 CS 習慣替同一件事取好幾個名字，prompt 尤其如此，同一份文件裡前後換用兩三個詞也很常見。讀官方文件與網路文章時會遇到的叫法，依所指的東西整理如下：
 
 - 使用者送出的那段話：prompt、user prompt、user message、query、input，中文有提示詞、指令、指示，網路上也戲稱咒語，指的都是同一件事。
 - 框架先寫上的那一段：system prompt、system message、developer message、instructions，ChatGPT 與 Codex 的 custom instructions 也屬此類。Anthropic 的文件多稱 system prompt，OpenAI 的[文件](https://developers.openai.com/api/docs/guides/text)則寫 developer message 或 instructions。
 - 寫 prompt 這件事：prompting、prompt engineering（提示工程）。兩家指南的標題 Prompting best practices 與 Prompt guidance 即由此而來，後文的 meta-prompting 則是請 LLM 代寫 prompt。
-- LLM 每次讀進的全部文字：context，即〈LLM 與 agent 的運作原理〉一篇所說白板上的所有內容。
+- LLM 每次讀進的全部文字：context，即[[LLM 與 agent 的運作原理]]一篇所說白板上的所有內容。
 
 Prompt 一詞本身也有兩種用法，狹義只指使用者送出的那段話，廣義則連框架先寫上的部分一併算入，讀到時須依上下文判斷。
 
@@ -109,9 +109,9 @@ Anthropic 的指南建議，同一個問題糾正超過兩次便開新對話。�
 
 ### 另開新對話審查
 
-Agent 改完之後，另開一個新對話審查，不要在原對話裡請它自己檢查，原因與「糾正兩次仍不對便重開」一項相同：先前的推理仍留在原對話的 context window 裡，它會沿著原來的思路再走一遍。這就像剛寫完報告的人自己校稿，讀到的是心裡想寫的意思，不是紙上實際寫的字，換一位同學來看，才看得出哪裡漏了。新的對話沒有先前的推理，只看得到資料夾裡的檔案，處境與那位同學相同。Anthropic 的[指南](https://code.claude.com/docs/en/best-practices)即指出，新的 context 有助於審查，因為 Claude 不會偏袒自己剛寫的 code；研究也發現，沒有外部的回饋時，LLM 自行修正答案反而可能愈改愈差（[Huang 等，2024](https://arxiv.org/abs/2310.01798)）。
+Agent 改完之後，另開一個新對話審查，不要在原對話裡請它自己檢查，原因與[[#糾正兩次仍不對便重開]]一項相同：先前的推理仍留在原對話的 context window 裡，它會沿著原來的思路再走一遍。這就像剛寫完報告的人自己校稿，讀到的是心裡想寫的意思，不是紙上實際寫的字，換一位同學來看，才看得出哪裡漏了。新的對話沒有先前的推理，只看得到資料夾裡的檔案，處境與那位同學相同。Anthropic 的[指南](https://code.claude.com/docs/en/best-practices)即指出，新的 context 有助於審查，因為 Claude 不會偏袒自己剛寫的 code；研究也發現，沒有外部的回饋時，LLM 自行修正答案反而可能愈改愈差（[Huang 等，2024](https://arxiv.org/abs/2310.01798)）。
 
-在 Claude 桌面 app 裡點選側邊欄的 New session（Windows 上也可按 Ctrl+N），選取同一個資料夾，交代它要檢查什麼。審查時常會換用較大的模型或調高 effort，因為找錯比照著做更需要推理，而審查只讀不改，來回的次數少，多耗的用量有限；兩者的選擇見「模型規模與 effort」一節。一次只交代一個角度，並寫明要看哪些檔案、找哪一類問題：
+在 Claude 桌面 app 裡點選側邊欄的 New session（Windows 上也可按 Ctrl+N），選取同一個資料夾，交代它要檢查什麼。審查時常會換用較大的模型或調高 effort，因為找錯比照著做更需要推理，而審查只讀不改，來回的次數少，多耗的用量有限；兩者的選擇見[[#模型規模與 effort]]一節。一次只交代一個角度，並寫明要看哪些檔案、找哪一類問題：
 
 ```text
 這個資料夾裡有一份已完成的分析。只檢查資料處理：讀 clean.R 與它輸出的 CSV，
@@ -234,7 +234,7 @@ Prompt 也可以請它代寫。把零散的想法、要求與先前試過不行�
 整理成一份給新對話用的 prompt，存成 docs/prompt.md。不確定我要什麼的地方先問我。
 ```
 
-反覆使用的 prompt 存成檔案，便是規範檔與 skill 的由來。〈規範檔與 skill〉一篇的規範檔即由 agent 起草，不少 skill 也是這樣寫成的，Anthropic 並提供專門代寫 skill 的[工具](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/skill-creator)。
+反覆使用的 prompt 存成檔案，便是規範檔與 skill 的由來。[[規範檔與 skill]]一篇的規範檔即由 agent 起草，不少 skill 也是這樣寫成的，Anthropic 並提供專門代寫 skill 的[工具](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/skill-creator)。
 
 ## 多模態輸入與文字優先
 
@@ -242,7 +242,7 @@ Prompt 也可以請它代寫。把零散的想法、要求與先前試過不行�
 
 圖片也讀不準，LLM 從圖片辨識小字與密集的數字時，準確度不如直接讀文字。統計分析尤其如此，結果多半畫成圖，而圖是給人看的，散布圖上某一點的座標、長條的高度，LLM 只能估計，圖背後的數字才是精確的。因此要 agent 解讀結果時，交給它的應是原始數字，即係數表、摘要統計或畫圖所用的那份資料，存成 CSV 讓它自己讀；圖則留給使用者自己看。
 
-因此原則是能用文字的便用文字。錯誤訊息應複製文字貼上，不要截圖；agent 自己執行 code 時出現的錯誤，它本來就讀得到，不必再貼。PDF、Excel 這類文件也是如此，需要反覆查閱的應先轉成文字格式再交給 agent，原因與做法是〈純文字工作法〉一篇的主題。
+因此原則是能用文字的便用文字。錯誤訊息應複製文字貼上，不要截圖；agent 自己執行 code 時出現的錯誤，它本來就讀得到，不必再貼。PDF、Excel 這類文件也是如此，需要反覆查閱的應先轉成文字格式再交給 agent，原因與做法是[[純文字工作法]]一篇的主題。
 
 附圖時同樣要寫明問題所在與期望的結果，圖只是佐證；截圖只截相關的部分，不要整個螢幕。
 

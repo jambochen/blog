@@ -2,9 +2,20 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
+// Load Markdown and MDX files in the `src/content/blog/` directory.
+const posts = glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' });
+
 const blog = defineCollection({
-	// Load Markdown and MDX files in the `src/content/blog/` directory.
-	loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
+	loader: {
+		...posts,
+		// The loader keeps a Markdown post's HTML until that file changes, but a
+		// `[[wikilink]]` in it depends on other posts too: the target may have been
+		// published, renamed or removed since. Emptying the store renders every post anew.
+		load: (context) => {
+			context.store.clear();
+			return posts.load(context);
+		},
+	},
 	// Type-check frontmatter using a schema
 	schema: ({ image }) =>
 		z.object({

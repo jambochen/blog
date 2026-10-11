@@ -137,6 +137,18 @@ kbd {
 	scroll-margin-top: 1.5rem;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+	.prose :is(h2, h3, h4):target {
+		animation: arrive 1.8s ease-out;
+	}
+}
+
+@keyframes arrive {
+	from {
+		background: color-mix(in srgb, var(--amber) 45%, transparent);
+	}
+}
+
 .prose h2 {
 	margin: 3.25rem 0 1rem;
 	font-size: 1.563rem;
@@ -163,6 +175,17 @@ kbd {
 
 .prose li::marker {
 	color: var(--muted);
+}
+
+/* In-site references come several to a paragraph, so they stay in the text colour until pointed at; the underline alone marks them. */
+.prose a.xref {
+	color: inherit;
+	text-decoration-color: var(--muted);
+}
+
+.prose a.xref:hover {
+	color: var(--violet);
+	text-decoration-color: currentColor;
 }
 
 .prose blockquote {

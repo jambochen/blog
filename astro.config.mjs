@@ -9,6 +9,7 @@ import rehypeMathjax from 'rehype-mathjax';
 import remarkMath from 'remark-math';
 import { remarkHeadingText } from './src/lib/remarkHeadingText.ts';
 import { remarkMermaid } from './src/lib/remarkMermaid.ts';
+import { remarkWikilinks, wikilinkCheck } from './src/lib/remarkWikilinks.ts';
 
 // The Latin faces sit in front of the CJK face in one font-family stack, so they
 // must not carry a generic fallback: `serif` would match first and swallow every
@@ -44,10 +45,11 @@ export default defineConfig({
 		}),
 		mdx(),
 		sitemap(),
+		wikilinkCheck(),
 	],
 	markdown: {
 		processor: unified({
-			remarkPlugins: [remarkMath, remarkMermaid, remarkHeadingText],
+			remarkPlugins: [remarkMath, remarkMermaid, remarkHeadingText, remarkWikilinks],
 			// `ams` numbers only equation/align-style environments, which is what \label and \eqref need.
 			rehypePlugins: [[rehypeMathjax, { tex: { tags: 'ams' } }]],
 		}),
