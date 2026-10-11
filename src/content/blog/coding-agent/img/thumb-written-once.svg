@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <style>
+    /* Loaded as an image, so page styles do not reach in: the greys are mid-tones that read on both the light and the dark page. */
+    .line { fill: none; stroke: #808892; stroke-width: 3; stroke-linecap: round; }
+    .said { stroke: #eb6c36; animation: say 7s ease-in-out infinite; }
+    .kept { stroke: #eb6c36; animation: keep 7s ease-in-out infinite; }
+    /* Said three times over, then moved into the file, where it stays. */
+    @keyframes say {
+      0%, 3% { opacity: 0; transform: translateX(0); }
+      7%, 11% { opacity: 1; }
+      15%, 18% { opacity: 0; }
+      22%, 26% { opacity: 1; }
+      30%, 33% { opacity: 0; }
+      37%, 42% { opacity: 1; transform: translateX(0); }
+      52% { opacity: 1; transform: translateX(-118px); }
+      56%, 100% { opacity: 0; transform: translateX(-118px); }
+    }
+    @keyframes keep {
+      0%, 52% { opacity: 0; }
+      56%, 93% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .said { animation: none; opacity: 0; }
+      .kept { animation: none; opacity: 1; }
+    }
+  </style>
+  <path class="line" d="M40 50H86L104 68V150H40Z M86 50V68H104" />
+  <path class="line" d="M54 88H90" />
+  <path class="line kept" d="M54 110H90" />
+  <path class="line said" d="M172 110H208" />
+  <path class="line" d="M172 88H248M172 132H232" />
+</svg>

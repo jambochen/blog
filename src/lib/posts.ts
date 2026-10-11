@@ -2,11 +2,18 @@ import { type CollectionEntry, getCollection } from 'astro:content';
 
 type Post = CollectionEntry<'blog'>;
 
+// Reused from the start once there are more series than tones.
+const TONES = ['page', 'indigo', 'vermilion', 'moss'] as const;
+export type Tone = (typeof TONES)[number];
+
 export interface SeriesPosition {
 	name: string;
 	slug: string;
+	tone: Tone;
 	number: number;
 	total: number;
+	// A count only, so the titles of unpublished episodes stay out of the build.
+	unpublishedAfter: number;
 }
 
 export interface Episode {
@@ -18,6 +25,7 @@ export interface Episode {
 export interface Series {
 	name: string;
 	slug: string;
+	tone: Tone;
 	episodes: Episode[];
 }
 
@@ -45,6 +53,7 @@ export function getPosts(): Promise<Post[]> {
 // Oldest first.
 export async function getEpisodes(): Promise<Episode[]> {
 	const posts = (await getPosts()).sort(byPubDate);
+	const unpublished = await getCollection('blog', ({ data }) => !import.meta.env.DEV && data.draft);
 
 	const members = new Map<string, Post[]>();
 	for (const post of posts) {
@@ -53,16 +62,23 @@ export async function getEpisodes(): Promise<Episode[]> {
 	}
 
 	const positions = new Map<string, SeriesPosition>();
-	for (const [name, seriesPosts] of members) {
+	// `members` lists series by their oldest post, so a series keeps its tone when a newer series is added.
+	[...members].forEach(([name, seriesPosts], seriesIndex) => {
+		// The `!` is safe: the index is taken modulo the array's own length.
+		const tone = TONES[seriesIndex % TONES.length]!;
 		seriesPosts.sort(bySeriesOrder).forEach((post, index) => {
 			positions.set(post.id, {
 				name,
 				slug: seriesSlug(name),
+				tone,
 				number: index + 1,
 				total: seriesPosts.length,
+				unpublishedAfter: unpublished.filter(
+					(draft) => draft.data.series === name && bySeriesOrder(draft, post) > 0,
+				).length,
 			});
 		});
-	}
+	});
 
 	return posts.map((post) => ({ post, series: positions.get(post.id) }));
 }
@@ -71,8 +87,8 @@ export function groupSeries(episodes: Episode[]): Series[] {
 	const groups = new Map<string, Series>();
 	for (const episode of episodes) {
 		if (!episode.series) continue;
-		const { name, slug } = episode.series;
-		const group = groups.get(slug) ?? { name, slug, episodes: [] };
+		const { name, slug, tone } = episode.series;
+		const group = groups.get(slug) ?? { name, slug, tone, episodes: [] };
 		group.episodes.push(episode);
 		groups.set(slug, group);
 	}
@@ -99,4 +115,15 @@ export function neighbours(
 
 export function seriesPositionLabel(position: SeriesPosition): string {
 	return `第 ${position.number} 篇，共 ${position.total} 篇`;
+}
+
+// Chinese is counted by character and Latin text by word; code blocks, imports and markup are left out.
+export function countWords(body: string): number {
+	const prose = body
+		.replace(/```[\s\S]*?```/g, '')
+		.replace(/^import .*$/gm, '')
+		.replace(/<[^>]+>/g, '');
+	const cjk = prose.match(/[\u4e00-\u9fff]/g)?.length ?? 0;
+	const latin = prose.match(/[A-Za-z0-9]+/g)?.length ?? 0;
+	return cjk + latin;
 }

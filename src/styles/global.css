@@ -1,13 +1,15 @@
 :root {
-	--paper: #eef0f2;
+	--paper: #fff;
 	--surface: #e1e5e9;
 	--ink: #16191d;
 	--muted: #59616b;
 	--rule: #c6ccd3;
-	--violet: #55389c;
+	--accent: #2a3a9c;
 	--amber: #eda900;
-	--bar: #000;
-	--bar-ink: #f4f4ef;
+	--bar-ink: var(--ink);
+	/* A colour block is the same printed object in both themes, so its text colour does not follow the page. */
+	--tone: #23282e;
+	--block-ink: #fff;
 
 	--measure: 42rem;
 	--gutter: clamp(1.25rem, 5vw, 4rem);
@@ -20,9 +22,49 @@
 	--ink: #dde1e6;
 	--muted: #8d96a0;
 	--rule: #2e353c;
-	--violet: #ab98f2;
+	--accent: #a3b0ff;
 	--amber: #f5b41a;
+	--tone: #2b3138;
 	color-scheme: dark;
+}
+
+/* Not a block at all: the page's own colours, so the heavy type sits on the page. Ink would be invisible as a link colour, hence the orange. */
+[data-tone='page'] {
+	--tone: var(--paper);
+	--block-ink: var(--ink);
+	--accent: #b8400a;
+}
+
+[data-tone='indigo'] {
+	--tone: #2a3a9c;
+	--accent: #2a3a9c;
+}
+
+[data-tone='vermilion'] {
+	--tone: #cf3a1b;
+	--accent: #b8300f;
+}
+
+[data-tone='moss'] {
+	--tone: #4d6a2c;
+	--accent: #44601f;
+}
+
+/* The block colours are too dark to read as text on the dark page, so links get a lighter relative. */
+:root[data-theme='dark'] [data-tone='page'] {
+	--accent: #ff8f45;
+}
+
+:root[data-theme='dark'] [data-tone='indigo'] {
+	--accent: #a3b0ff;
+}
+
+:root[data-theme='dark'] [data-tone='vermilion'] {
+	--accent: #ff9478;
+}
+
+:root[data-theme='dark'] [data-tone='moss'] {
+	--accent: #b1cf86;
 }
 
 *,
@@ -73,7 +115,7 @@ main {
 }
 
 a {
-	color: var(--violet);
+	color: var(--accent);
 	text-underline-offset: 0.2em;
 	text-decoration-thickness: 1px;
 }
@@ -184,7 +226,7 @@ kbd {
 }
 
 .prose a.xref:hover {
-	color: var(--violet);
+	color: var(--accent);
 	text-decoration-color: currentColor;
 }
 

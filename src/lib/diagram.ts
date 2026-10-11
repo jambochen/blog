@@ -7,7 +7,7 @@ const SOLID: Record<string, string> = {
 	'#eb6c36': 'var(--diagram-accent)',
 	'#ffffff': 'var(--diagram-raised)',
 	'#d9dadd': 'var(--rule)',
-	'#2e5aa8': 'var(--violet)',
+	'#2e5aa8': 'var(--accent)',
 	// These two are blends baked into the drawings: a label mask over a 2% ink zone, and a softened muted stroke.
 	'#f1f1f2': 'color-mix(in srgb, var(--ink) 2%, var(--paper))',
 	'#7a8399': 'color-mix(in srgb, var(--muted) 74%, var(--paper))',

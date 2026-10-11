@@ -3,6 +3,7 @@ import type { MarkdownHeading } from 'astro';
 import MermaidDiagrams from '../components/MermaidDiagrams.astro';
 import PostHeader from '../components/PostHeader.astro';
 import PostOutline from '../components/PostOutline.astro';
+import ToBeContinued from '../components/ToBeContinued.astro';
 import XrefPreview from '../components/XrefPreview.astro';
 import { SITE_TITLE } from '../consts';
 import type { Episode } from '../lib/posts';
@@ -12,22 +13,23 @@ interface Props {
 	episode: Episode;
 	previous?: Episode;
 	next?: Episode;
-	seriesEpisodes?: Episode[];
 	headings: MarkdownHeading[];
 }
 
-const { episode, previous, next, seriesEpisodes, headings } = Astro.props;
+const { episode, previous, next, headings } = Astro.props;
 const { title, description } = episode.post.data;
+const unpublishedAfter = next ? 0 : (episode.series?.unpublishedAfter ?? 0);
+const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter > 0);
 ---
 
-<Base title={`${title} | ${SITE_TITLE}`} description={description}>
-	<article>
+<Base title={`${title} | ${SITE_TITLE}`} description={description} wallpaper="threeBody">
+	<article data-pagefind-body data-tone={episode.series?.tone}>
 		<PostHeader episode={episode} />
 		<div class="wrap body">
 			<div class="prose">
 				<slot />
 			</div>
-			<aside class="side">
+			<aside class="side" data-pagefind-ignore>
 				<PostOutline headings={headings} />
 			</aside>
 		</div>
@@ -35,38 +37,22 @@ const { title, description } = episode.post.data;
 	<XrefPreview />
 
 	{
-		episode.series && seriesEpisodes && (
-			<nav class="wrap after contents" aria-label="系列目錄">
-				<h2>
-					<a href={`/series/${episode.series.slug}/`}>{episode.series.name}</a>
-					<span class="contents-total">共 {episode.series.total} 篇</span>
-				</h2>
-				<ol>
-					{seriesEpisodes.map((item) => (
-						<li>
-							{item.post.id === episode.post.id ? (
-								<span aria-current="page">{item.post.data.title}（本篇）</span>
-							) : (
-								<a href={`/blog/${item.post.id}/`}>{item.post.data.title}</a>
-							)}
-						</li>
-					))}
-				</ol>
-			</nav>
-		)
-	}
-
-	{
-		(next || previous) && (
-			<nav class="wrap after turn" aria-label="前後篇">
+		(next || previous || continues) && (
+			<nav class:list={['wrap', 'after', 'turn', { continues }]} aria-label="前後篇">
 				{next && (
-					<a href={`/blog/${next.post.id}/`}>
-						<span class="turn-label">下一篇</span>
+					<a class="turn-row" href={`/blog/${next.post.id}/`}>
+						{continues ? <ToBeContinued label="下一篇" /> : <span class="turn-label">下一篇</span>}
 						<span class="turn-title">{next.post.data.title}</span>
 					</a>
 				)}
+				{unpublishedAfter > 0 && (
+					<p class="turn-row">
+						<ToBeContinued />
+						<span class="turn-label">未完待續，後面還有 {unpublishedAfter} 篇</span>
+					</p>
+				)}
 				{previous && (
-					<a href={`/blog/${previous.post.id}/`}>
+					<a class="turn-row" href={`/blog/${previous.post.id}/`}>
 						<span class="turn-label">上一篇</span>
 						<span class="turn-title">{previous.post.data.title}</span>
 					</a>
@@ -95,51 +81,29 @@ const { title, description } = episode.post.data;
 	.after {
 		margin-top: 4rem;
 	}
-	.contents + .turn {
-		margin-top: 2.5rem;
-	}
-	.contents h2 {
-		margin: 0 0 0.5rem;
-		font-family: var(--font-mincho);
-		font-size: 1.25rem;
-		font-weight: 900;
-		line-height: 1.4;
-	}
-	.contents h2 a {
-		color: inherit;
-	}
-	.contents-total {
-		margin-left: 0.75rem;
-		color: var(--muted);
-		font-size: 0.9rem;
-		font-weight: 400;
-	}
-	.contents ol {
+	.turn-row {
+		display: grid;
+		grid-template-columns: var(--turn-label, 4.5rem) minmax(0, 1fr);
+		align-items: center;
+		gap: 0.4rem 1rem;
 		max-width: var(--measure);
 		margin: 0;
-		padding-left: 1.75rem;
-	}
-	.contents li {
-		padding-block: 0.2rem;
-	}
-	.contents li::marker {
-		color: var(--muted);
-	}
-	.contents [aria-current] {
-		font-weight: 700;
-	}
-	.turn a {
-		display: grid;
-		grid-template-columns: 4.5rem minmax(0, 1fr);
-		column-gap: 1rem;
-		max-width: var(--measure);
 		padding-block: 0.9rem;
 		border-top: 1px solid var(--rule);
 		color: inherit;
 		text-decoration: none;
 	}
-	.turn a:last-child {
+	.turn-row:last-child {
 		border-bottom: 1px solid var(--rule);
+	}
+	/* Every row takes the arrow's width, so the titles stay in one column. */
+	.turn.continues {
+		--turn-label: 11.75rem;
+	}
+	@media (max-width: 34rem) {
+		.turn.continues .turn-row {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 	.turn-label {
 		color: var(--muted);
@@ -149,6 +113,6 @@ const { title, description } = episode.post.data;
 		font-weight: 700;
 	}
 	.turn a:hover .turn-title {
-		color: var(--violet);
+		color: var(--accent);
 	}
 </style>

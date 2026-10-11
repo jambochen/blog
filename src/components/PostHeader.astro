@@ -11,38 +11,60 @@ const { series } = episode;
 const { title, description, pubDate, updatedDate, tags } = episode.post.data;
 ---
 
-<header class="post-header wrap">
-	{
-		series && (
-			<p class="series">
-				<a href={`/series/${series.slug}/`}>{series.name}</a>
-				<span>{seriesPositionLabel(series)}</span>
-			</p>
-		)
-	}
-	<h1>{title}</h1>
-	<p class="description">{description}</p>
-	<p class="meta">
-		<span>發佈於 <FormattedDate date={pubDate} /></span>
-		{updatedDate && <span>更新於 <FormattedDate date={updatedDate} /></span>}
-		{tags.map((tag) => <span class="tag">#{tag}</span>)}
-	</p>
+<header class="post-header">
+	<div class="wrap inner">
+		{/* Decorative: the series line below states the position in words. */}
+		{series && <span class="number" aria-hidden="true">{String(series.number).padStart(2, '0')}</span>}
+		{
+			series && (
+				<p class="series">
+					<a href={`/series/${series.slug}/`}>{series.name}</a>
+					<span>{seriesPositionLabel(series)}</span>
+				</p>
+			)
+		}
+		<h1>{title}</h1>
+		<p class="description">{description}</p>
+		<p class="meta">
+			<span>發佈於 <FormattedDate date={pubDate} /></span>
+			{updatedDate && <span>更新於 <FormattedDate date={updatedDate} /></span>}
+			{tags.map((tag) => <span>#{tag}</span>)}
+		</p>
+	</div>
 </header>
 
 <style>
 	.post-header {
-		padding-top: 3.5rem;
+		margin-bottom: 3rem;
+		/* Only visible for the unfilled tone, where nothing else separates the header from the text. */
+		border-bottom: 1px solid color-mix(in srgb, var(--block-ink) 35%, transparent);
+		background: var(--tone);
+		color: var(--block-ink);
 	}
-	.post-header > * {
-		max-width: var(--measure);
+	:global([data-tone='page']) .post-header {
+		background: none;
+	}
+	.inner {
+		padding-block: 2.5rem;
+	}
+	.number {
+		display: block;
+		margin-bottom: 1.5rem;
+		font-family: var(--font-ui), sans-serif;
+		font-size: 3.815rem;
+		font-weight: 500;
+		font-variant-numeric: tabular-nums;
+		line-height: 1;
 	}
 	.series {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0 1rem;
 		margin: 0 0 0.5rem;
-		color: var(--muted);
 		font-size: 0.9rem;
+	}
+	.series a {
+		color: inherit;
 	}
 	h1 {
 		margin: 0;
@@ -53,8 +75,8 @@ const { title, description, pubDate, updatedDate, tags } = episode.post.data;
 		text-wrap: balance;
 	}
 	.description {
+		max-width: var(--measure);
 		margin: 0.75rem 0 0;
-		color: var(--muted);
 		font-size: 1.125rem;
 		line-height: 1.6;
 	}
@@ -62,13 +84,30 @@ const { title, description, pubDate, updatedDate, tags } = episode.post.data;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.25rem 1.5rem;
-		margin: 1.5rem 0 2.5rem;
-		padding-bottom: 1.5rem;
-		border-bottom: 1px solid var(--rule);
-		color: var(--muted);
+		margin: 1.5rem 0 0;
 		font-size: 0.9rem;
 	}
-	.tag {
-		color: var(--violet);
+	.meta :global(.date) {
+		color: inherit;
+	}
+
+	@media (min-width: 52rem) {
+		.inner {
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr);
+			column-gap: 2.5rem;
+			padding-block: 3.5rem;
+		}
+		.inner > :not(.number) {
+			grid-column: 2;
+		}
+		/* Spans every row so the title block sits beside the number, not below it. */
+		.number {
+			grid-column: 1;
+			grid-row: 1 / span 4;
+			margin: 0;
+			font-size: 7.451rem;
+			line-height: 0.85;
+		}
 	}
 </style>

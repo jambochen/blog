@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <style>
+    /* Loaded as an image, so page styles do not reach in: the greys are mid-tones that read on both the light and the dark page. */
+    .model { fill: #808892; fill-opacity: 0.2; stroke: #808892; stroke-width: 3; }
+    .pick { fill: #eb6c36; fill-opacity: 0.2; stroke: #eb6c36; stroke-width: 3; opacity: 0; }
+    /* The choice tries the smallest and the largest before it settles on the one in between. */
+    .small { animation: small 6s ease-in-out infinite; }
+    .large { animation: large 6s ease-in-out infinite; }
+    .medium { animation: medium 6s ease-in-out infinite; }
+    @keyframes small {
+      0%, 14% { opacity: 1; }
+      20%, 100% { opacity: 0; }
+    }
+    @keyframes large {
+      0%, 14% { opacity: 0; }
+      20%, 34% { opacity: 1; }
+      40%, 100% { opacity: 0; }
+    }
+    @keyframes medium {
+      0%, 34% { opacity: 0; }
+      40%, 92% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .small, .large { animation: none; }
+      .medium { animation: none; opacity: 1; }
+    }
+  </style>
+  <rect class="model" x="38" y="114" width="36" height="36" rx="4" />
+  <rect class="model" x="108" y="94" width="56" height="56" rx="4" />
+  <rect class="model" x="198" y="74" width="76" height="76" rx="4" />
+  <rect class="pick small" x="38" y="114" width="36" height="36" rx="4" />
+  <rect class="pick medium" x="108" y="94" width="56" height="56" rx="4" />
+  <rect class="pick large" x="198" y="74" width="76" height="76" rx="4" />
+</svg>

@@ -1,0 +1,140 @@
+---
+import { SITE_TITLE } from '../consts';
+import Base from '../layouts/Base.astro';
+---
+
+<Base title={`搜尋 | ${SITE_TITLE}`} description="搜尋全部文章的內文。">
+	<div class="wrap page">
+		<h1>搜尋</h1>
+		<form role="search">
+			<label class="sr-only" for="query">搜尋文章</label>
+			<input id="query" name="q" type="search" autocomplete="off" placeholder="輸入關鍵字" />
+		</form>
+		<p class="status" aria-live="polite"></p>
+		<ol class="results"></ol>
+	</div>
+</Base>
+
+<script>
+	interface PagefindResult {
+		url: string;
+		excerpt: string;
+		meta: { title?: string };
+	}
+	interface Pagefind {
+		debouncedSearch(query: string): Promise<{ results: { data(): Promise<PagefindResult> }[] } | null>;
+	}
+
+	const MAX_RESULTS = 20;
+
+	const input = document.querySelector<HTMLInputElement>('#query');
+	const status = document.querySelector<HTMLElement>('.status');
+	const list = document.querySelector<HTMLElement>('.results');
+
+	if (input && status && list) {
+		let pagefind: Pagefind | undefined;
+		const load = async () => {
+			// The index is written into the built site by the `build` script, so this path does not exist for the bundler to resolve.
+			const path = '/pagefind/pagefind.js';
+			pagefind ??= await import(/* @vite-ignore */ path);
+			return pagefind;
+		};
+
+		const search = async () => {
+			const query = input.value.trim();
+			history.replaceState(null, '', query ? `?q=${encodeURIComponent(query)}` : location.pathname);
+			if (!query) {
+				list.replaceChildren();
+				status.textContent = '';
+				return;
+			}
+			let found;
+			try {
+				found = await (await load())!.debouncedSearch(query);
+			} catch {
+				status.textContent = '搜尋索引只在建置後的網站裡，開發伺服器沒有。';
+				return;
+			}
+			// Null means a newer keystroke replaced this search.
+			if (!found) return;
+			const results = await Promise.all(found.results.slice(0, MAX_RESULTS).map((result) => result.data()));
+			status.textContent = results.length ? `${found.results.length} 篇符合` : '沒有符合的文章';
+			list.replaceChildren(
+				...results.map((result) => {
+					const item = document.createElement('li');
+					const link = document.createElement('a');
+					link.href = result.url;
+					const title = document.createElement('span');
+					title.className = 'title';
+					title.textContent = result.meta.title ?? result.url;
+					const excerpt = document.createElement('span');
+					excerpt.className = 'excerpt';
+					// Pagefind escapes the page text and adds only its own <mark> tags.
+					excerpt.innerHTML = result.excerpt;
+					link.append(title, excerpt);
+					item.append(link);
+					return item;
+				}),
+			);
+		};
+
+		input.value = new URLSearchParams(location.search).get('q') ?? '';
+		input.addEventListener('input', search);
+		input.form?.addEventListener('submit', (event) => event.preventDefault());
+		input.focus();
+		search();
+	}
+</script>
+
+<style>
+	input {
+		width: 100%;
+		max-width: var(--measure);
+		padding: 0.6rem 0.8rem;
+		border: 1px solid var(--muted);
+		border-radius: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+	}
+	.status {
+		min-height: 1.85em;
+		margin: 1rem 0 0.5rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+	.results {
+		max-width: var(--measure);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.results :global(a) {
+		display: block;
+		padding-block: 1rem;
+		border-top: 1px solid var(--rule);
+		color: inherit;
+		text-decoration: none;
+	}
+	.results :global(.title) {
+		display: block;
+		font-family: var(--font-mincho);
+		font-weight: 700;
+		font-size: 1.25rem;
+		line-height: 1.45;
+	}
+	.results :global(a:hover .title) {
+		color: var(--accent);
+	}
+	.results :global(.excerpt) {
+		display: block;
+		margin-top: 0.25rem;
+		color: var(--muted);
+		font-size: 0.9rem;
+		line-height: 1.7;
+	}
+	.results :global(mark) {
+		background: var(--amber);
+		color: #000;
+	}
+</style>

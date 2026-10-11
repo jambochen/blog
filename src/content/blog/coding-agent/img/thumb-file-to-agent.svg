@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <style>
+    /* Loaded as an image, so page styles do not reach in: the greys are mid-tones that read on both the light and the dark page. */
+    .line { fill: none; stroke: #808892; stroke-width: 3; stroke-linecap: round; }
+    .agent { fill: #eb6c36; fill-opacity: 0.14; stroke: #eb6c36; stroke-width: 3; }
+    /* One dash period per cycle, so the loop has no visible seam. */
+    .flow { stroke: #eb6c36; stroke-dasharray: 10 14; animation: read 1.2s linear infinite; }
+    @keyframes read {
+      to { stroke-dashoffset: -24; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .flow { animation: none; }
+    }
+  </style>
+  <path class="line" d="M40 50H86L104 68V150H40Z M86 50V68H104" />
+  <path class="line" d="M54 88H90M54 106H90M54 124H78" />
+  <path class="line flow" d="M118 100H196" />
+  <rect class="agent" x="204" y="72" width="60" height="56" rx="6" />
+</svg>

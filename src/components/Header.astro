@@ -9,6 +9,7 @@ import HeaderLink from './HeaderLink.astro';
 		<div class="links">
 			<HeaderLink href="/blog">文章</HeaderLink>
 			<HeaderLink href="/about">關於</HeaderLink>
+			<HeaderLink href="/search">搜尋</HeaderLink>
 			<button type="button" id="theme-toggle">切到深色</button>
 		</div>
 	</nav>
@@ -31,7 +32,7 @@ import HeaderLink from './HeaderLink.astro';
 
 <style>
 	.site-header {
-		background: var(--bar);
+		border-bottom: 1px solid var(--bar-ink);
 		color: var(--bar-ink);
 		font-family: var(--font-mincho);
 	}

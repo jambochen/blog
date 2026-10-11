@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <style>
+    /* Loaded as an image, so page styles do not reach in: the greys are mid-tones that read on both the light and the dark page. */
+    .pane { fill: #808892; fill-opacity: 0.2; stroke: #808892; stroke-width: 3; }
+    .agent { fill: #eb6c36; fill-opacity: 0.14; stroke: #eb6c36; }
+    .frame { fill: none; stroke: #808892; stroke-width: 3; animation: frame 6s ease-in-out infinite; }
+    .left { animation: left 6s ease-in-out infinite; }
+    .right { animation: right 6s ease-in-out infinite; }
+    @keyframes left {
+      0%, 20% { transform: translateX(0); }
+      40%, 85% { transform: translateX(24px); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes right {
+      0%, 20% { transform: translateX(0); }
+      40%, 85% { transform: translateX(-24px); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes frame {
+      0%, 30% { opacity: 0; }
+      45%, 85% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .left { animation: none; transform: translateX(24px); }
+      .right { animation: none; transform: translateX(-24px); }
+      .frame { animation: none; opacity: 1; }
+    }
+  </style>
+  <path class="frame" d="M36 36H264V164H36Z M36 52H264" />
+  <rect class="pane left" x="20" y="60" width="64" height="96" rx="3" />
+  <rect class="pane agent" x="118" y="60" width="64" height="96" rx="3" />
+  <rect class="pane right" x="216" y="60" width="64" height="96" rx="3" />
+</svg>
