@@ -1,5 +1,6 @@
 import rss from '@astrojs/rss';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { withBase } from '../lib/paths';
 import { getPosts } from '../lib/posts';
 
 export async function GET(context) {
@@ -7,10 +8,10 @@ export async function GET(context) {
 	return rss({
 		title: SITE_TITLE,
 		description: SITE_DESCRIPTION,
-		site: context.site,
+		site: new URL(withBase('/'), context.site),
 		items: posts.map((post) => ({
 			...post.data,
-			link: `/blog/${post.id}/`,
+			link: withBase(`/blog/${post.id}/`),
 		})),
 	});
 }

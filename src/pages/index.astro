@@ -2,6 +2,7 @@
 import Shelf from '../components/Shelf.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
+import { withBase } from '../lib/paths';
 import { getEpisodes, groupSeries } from '../lib/posts';
 
 const STANDALONE_COUNT = 8;
@@ -18,19 +19,19 @@ const standalone = episodes.filter((episode) => !episode.series).reverse();
 
 		{
 			allSeries.map((series) => (
-				<Shelf name={series.name} href={`/blog/${series.slug}/`} episodes={series.episodes} tone={series.tone} />
+				<Shelf name={series.name} href={withBase(`/blog/${series.slug}/`)} episodes={series.episodes} tone={series.tone} />
 			))
 		}
 
 		{
 			standalone.length > 0 && (
-				<Shelf name="單篇文章" href="/blog" episodes={standalone.slice(0, STANDALONE_COUNT)} />
+				<Shelf name="單篇文章" href={withBase('/blog')} episodes={standalone.slice(0, STANDALONE_COUNT)} />
 			)
 		}
 		{
 			standalone.length > STANDALONE_COUNT && (
 				<p class="all">
-					<a href="/blog">看全部 {episodes.length} 篇文章</a>
+					<a href={withBase('/blog')}>看全部 {episodes.length} 篇文章</a>
 				</p>
 			)
 		}

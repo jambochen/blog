@@ -6,6 +6,7 @@ import PostOutline from '../components/PostOutline.astro';
 import ToBeContinued from '../components/ToBeContinued.astro';
 import XrefPreview from '../components/XrefPreview.astro';
 import { SITE_TITLE } from '../consts';
+import { withBase } from '../lib/paths';
 import type { Episode } from '../lib/posts';
 import Base from './Base.astro';
 
@@ -40,7 +41,7 @@ const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter 
 		(next || previous || continues) && (
 			<nav class:list={['wrap', 'after', 'turn', { continues }]} aria-label="前後篇">
 				{next && (
-					<a class="turn-row" href={`/blog/${next.post.id}/`}>
+					<a class="turn-row" href={withBase(`/blog/${next.post.id}/`)}>
 						{continues ? <ToBeContinued label="下一篇" /> : <span class="turn-label">下一篇</span>}
 						<span class="turn-title">{next.post.data.title}</span>
 					</a>
@@ -52,7 +53,7 @@ const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter 
 					</p>
 				)}
 				{previous && (
-					<a class="turn-row" href={`/blog/${previous.post.id}/`}>
+					<a class="turn-row" href={withBase(`/blog/${previous.post.id}/`)}>
 						<span class="turn-label">上一篇</span>
 						<span class="turn-title">{previous.post.data.title}</span>
 					</a>

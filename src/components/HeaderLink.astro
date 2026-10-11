@@ -1,5 +1,6 @@
 ---
 import type { HTMLAttributes } from 'astro/types';
+import { withBase } from '../lib/paths';
 
 type Props = HTMLAttributes<'a'>;
 
@@ -10,7 +11,7 @@ const isActive = href === pathname || href === '/' + (subpath?.[0] || '');
 ---
 
 <a
-	href={href}
+	href={href && withBase(String(href))}
 	class:list={[className, { active: isActive }]}
 	aria-current={isActive ? 'page' : undefined}
 	{...props}

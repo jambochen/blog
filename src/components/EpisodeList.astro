@@ -1,4 +1,5 @@
 ---
+import { withBase } from '../lib/paths';
 import { type Episode, seriesPositionLabel } from '../lib/posts';
 import FormattedDate from './FormattedDate.astro';
 
@@ -14,7 +15,7 @@ const { episodes, showSeries = true } = Astro.props;
 	{
 		episodes.map(({ post, series }) => (
 			<li>
-				<a href={`/blog/${post.id}/`}>
+				<a href={withBase(`/blog/${post.id}/`)}>
 					<span class="text">
 						{series && (
 							<span class="series">

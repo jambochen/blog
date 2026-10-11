@@ -22,6 +22,7 @@ import Base from '../layouts/Base.astro';
 		meta: { title?: string };
 	}
 	interface Pagefind {
+		options(options: { baseUrl: string }): Promise<void>;
 		debouncedSearch(query: string): Promise<{ results: { data(): Promise<PagefindResult> }[] } | null>;
 	}
 
@@ -35,8 +36,12 @@ import Base from '../layouts/Base.astro';
 		let pagefind: Pagefind | undefined;
 		const load = async () => {
 			// The index is written into the built site by the `build` script, so this path does not exist for the bundler to resolve.
-			const path = '/pagefind/pagefind.js';
-			pagefind ??= await import(/* @vite-ignore */ path);
+			const path = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/pagefind/pagefind.js`;
+			if (!pagefind) {
+				pagefind = (await import(/* @vite-ignore */ path)) as Pagefind;
+				// Pagefind indexes `dist` and so knows page paths without the base.
+				await pagefind.options({ baseUrl: import.meta.env.BASE_URL });
+			}
 			return pagefind;
 		};
 

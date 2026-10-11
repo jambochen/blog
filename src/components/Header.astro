@@ -1,11 +1,12 @@
 ---
 import { SITE_TITLE } from '../consts';
+import { withBase } from '../lib/paths';
 import HeaderLink from './HeaderLink.astro';
 ---
 
 <header class="site-header">
 	<nav class="wrap" aria-label="主選單">
-		<a class="site-name" href="/">{SITE_TITLE}</a>
+		<a class="site-name" href={withBase('/')}>{SITE_TITLE}</a>
 		<div class="links">
 			<HeaderLink href="/blog">文章</HeaderLink>
 			<HeaderLink href="/about">關於</HeaderLink>

@@ -2,6 +2,7 @@
 import EpisodeList from '../../components/EpisodeList.astro';
 import { SITE_TITLE } from '../../consts';
 import Base from '../../layouts/Base.astro';
+import { withBase } from '../../lib/paths';
 import { type Episode, getEpisodes, groupSeries } from '../../lib/posts';
 
 const episodes = (await getEpisodes()).reverse();
@@ -31,7 +32,7 @@ for (const episode of episodes) {
 					<ul class="series">
 						{allSeries.map((series) => (
 							<li>
-								<a href={`/blog/${series.slug}/`}>{series.name}</a>
+								<a href={withBase(`/blog/${series.slug}/`)}>{series.name}</a>
 								<span class="count">共 {series.episodes.length} 篇</span>
 							</li>
 						))}

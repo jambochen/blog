@@ -16,9 +16,14 @@ import { remarkWikilinks, wikilinkCheck } from './src/lib/remarkWikilinks.ts';
 // Chinese glyph before the stack reaches the CJK face.
 const latinOnly = { fallbacks: [], optimizedFallbacks: false, subsets: ['latin'] };
 
+// GitHub Pages serves a project site under the repository name. Also handed to
+// the wikilink plugin, which runs outside Vite and cannot read `BASE_URL`.
+const BASE = '/blog';
+
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://example.com',
+	site: 'https://jambochen.github.io',
+	base: BASE,
 	integrations: [
 		// Has to come before mdx() so MDX code blocks go through it too.
 		expressiveCode({
@@ -49,7 +54,7 @@ export default defineConfig({
 	],
 	markdown: {
 		processor: unified({
-			remarkPlugins: [remarkMath, remarkMermaid, remarkHeadingText, remarkWikilinks],
+			remarkPlugins: [remarkMath, remarkMermaid, remarkHeadingText, [remarkWikilinks, { base: BASE }]],
 			// `ams` numbers only equation/align-style environments, which is what \label and \eqref need.
 			rehypePlugins: [[rehypeMathjax, { tex: { tags: 'ams' } }]],
 		}),

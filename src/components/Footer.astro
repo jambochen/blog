@@ -1,5 +1,6 @@
 ---
 import { SITE_TITLE } from '../consts';
+import { withBase } from '../lib/paths';
 
 const today = new Date();
 ---
@@ -9,7 +10,7 @@ const today = new Date();
 		<span>&copy; {today.getFullYear()} {SITE_TITLE}</span>
 		<span class="links">
 			<a href="https://github.com/JamboChen">GitHub</a>
-			<a href="/rss.xml">RSS 訂閱</a>
+			<a href={withBase('/rss.xml')}>RSS 訂閱</a>
 		</span>
 	</div>
 </footer>

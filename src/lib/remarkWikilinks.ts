@@ -96,7 +96,7 @@ function sectionsOf(body: string): Section[] {
 
 // Read on every call rather than once: in `astro dev` a renamed title or
 // heading has to reach the posts that refer to it without a restart.
-function readPosts(isBuild: boolean): Post[] {
+function readPosts(isBuild: boolean, base: string): Post[] {
 	const posts: Post[] = [];
 	for (const entry of readdirSync(CONTENT_DIR, { recursive: true, encoding: 'utf8' })) {
 		const extension = /\.mdx?$/.exec(entry)?.[0];
@@ -112,7 +112,7 @@ function readPosts(isBuild: boolean): Post[] {
 			path,
 			title: String(frontmatter.title),
 			description: String(frontmatter.description ?? ''),
-			url: `/blog/${id}/`,
+			url: `${base}/blog/${id}/`,
 			draft: frontmatter.draft === true,
 			// The folder, as in `seriesOf`.
 			series: segments.length > 1 ? segments[0] : undefined,
@@ -150,7 +150,7 @@ function readPosts(isBuild: boolean): Post[] {
 // sections, with `|` introducing the text to show instead of the default. A
 // reference that matches nothing fails the build, so a renamed title or heading
 // cannot leave a dead link behind.
-export function remarkWikilinks() {
+export function remarkWikilinks({ base = '' }: { base?: string } = {}) {
 	return (tree: MdastNode, file: { path?: string }) => {
 		// Matches `getPosts`: a build leaves drafts out, so a link to one would be dead.
 		const isBuild = process.env.NODE_ENV === 'production';
@@ -160,7 +160,7 @@ export function remarkWikilinks() {
 			return new Error(message);
 		};
 
-		const posts = readPosts(isBuild);
+		const posts = readPosts(isBuild, base);
 		const byTitle = new Map<string, Post>();
 		for (const post of posts) {
 			const other = byTitle.get(post.title);
