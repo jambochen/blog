@@ -12,6 +12,8 @@ export interface SeriesPosition {
 	tone: Tone;
 	number: number;
 	total: number;
+	// A count only, so the titles of unpublished episodes stay out of the build.
+	unpublishedAfter: number;
 }
 
 export interface Episode {
@@ -51,6 +53,7 @@ export function getPosts(): Promise<Post[]> {
 // Oldest first.
 export async function getEpisodes(): Promise<Episode[]> {
 	const posts = (await getPosts()).sort(byPubDate);
+	const unpublished = await getCollection('blog', ({ data }) => !import.meta.env.DEV && data.draft);
 
 	const members = new Map<string, Post[]>();
 	for (const post of posts) {
@@ -70,6 +73,9 @@ export async function getEpisodes(): Promise<Episode[]> {
 				tone,
 				number: index + 1,
 				total: seriesPosts.length,
+				unpublishedAfter: unpublished.filter(
+					(draft) => draft.data.series === name && bySeriesOrder(draft, post) > 0,
+				).length,
 			});
 		});
 	});

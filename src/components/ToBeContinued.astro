@@ -1,0 +1,59 @@
+---
+import arrow from '../assets/to-be-continued.svg?raw';
+
+interface Props {
+	// Left out where the text beside the arrow already says what it means.
+	label?: string;
+}
+
+const { label } = Astro.props;
+---
+
+<span class="tbc" role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : 'true'}>
+	<Fragment set:html={arrow} />
+</span>
+
+<script>
+	const arrive = new IntersectionObserver(
+		(entries) => {
+			for (const { isIntersecting, target } of entries) {
+				if (!isIntersecting) continue;
+				delete (target as HTMLElement).dataset.offstage;
+				arrive.unobserve(target);
+			}
+		},
+		{ threshold: 1 },
+	);
+	// The wrapper is observed because it keeps its place while the arrow inside waits off screen. The arrow is moved away only here, so it stays visible without script.
+	for (const wrapper of document.querySelectorAll<HTMLElement>('.tbc')) {
+		wrapper.dataset.offstage = '';
+		arrive.observe(wrapper);
+	}
+</script>
+
+<style>
+	.tbc {
+		display: block;
+		color: var(--ink);
+	}
+	.tbc :global(svg) {
+		display: block;
+		height: 2.75rem;
+		transition: translate 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	/* The waiting arrow sits past the right edge, which would otherwise give the page a horizontal scrollbar. */
+	:global(body) {
+		overflow-x: clip;
+	}
+	.tbc[data-offstage] :global(svg) {
+		translate: 100vw 0;
+	}
+	:global(a:hover) > .tbc {
+		color: var(--accent);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.tbc :global(svg) {
+			transition: none;
+		}
+	}
+</style>
