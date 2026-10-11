@@ -2,7 +2,7 @@
 import Shelf from '../components/Shelf.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
-import { countWords, getEpisodes, groupSeries } from '../lib/posts';
+import { getEpisodes, groupSeries } from '../lib/posts';
 
 const STANDALONE_COUNT = 8;
 
@@ -10,20 +10,11 @@ const episodes = await getEpisodes();
 // `episodes` is oldest first, so a series' place in it follows its newest episode once reversed: the series written most recently leads.
 const allSeries = groupSeries([...episodes].reverse());
 const standalone = episodes.filter((episode) => !episode.series).reverse();
-const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? ''), 0);
 ---
 
 <Base title={SITE_TITLE} description={SITE_DESCRIPTION}>
 	<div class="wrap page">
-		<h1>{SITE_TITLE}</h1>
-		<p class="intro">
-			{SITE_DESCRIPTION}
-			{episodes.length > 0 && (
-				<span class="stats">
-					{episodes.length} 篇　{words >= 10000 ? `${(words / 10000).toFixed(1)} 萬字` : `${words} 字`}
-				</span>
-			)}
-		</p>
+		<h1 class="sr-only">{SITE_TITLE}</h1>
 
 		{
 			allSeries.map((series) => (
@@ -55,19 +46,6 @@ const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? '
 </Base>
 
 <style>
-	.intro {
-		max-width: var(--measure);
-		margin: 0 0 2.5rem;
-		color: var(--muted);
-		font-size: 1.125rem;
-	}
-	.stats {
-		display: block;
-		margin-top: 0.25rem;
-		font-family: var(--font-ui), var(--font-gothic), sans-serif;
-		font-size: 0.9rem;
-		font-variant-numeric: tabular-nums;
-	}
 	.page > :global(.shelf + .shelf) {
 		margin-top: 1.5rem;
 	}

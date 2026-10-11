@@ -140,14 +140,3 @@ export function neighbours(
 export function seriesPositionLabel(position: SeriesPosition): string {
 	return `第 ${position.number} 篇，共 ${position.total} 篇`;
 }
-
-// Chinese is counted by character and Latin text by word; code blocks, imports and markup are left out.
-export function countWords(body: string): number {
-	const prose = body
-		.replace(/```[\s\S]*?```/g, '')
-		.replace(/^import .*$/gm, '')
-		.replace(/<[^>]+>/g, '');
-	const cjk = prose.match(/[\u4e00-\u9fff]/g)?.length ?? 0;
-	const latin = prose.match(/[A-Za-z0-9]+/g)?.length ?? 0;
-	return cjk + latin;
-}
