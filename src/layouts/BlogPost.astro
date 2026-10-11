@@ -19,7 +19,7 @@ const { episode, previous, next, seriesEpisodes, headings } = Astro.props;
 const { title, description } = episode.post.data;
 ---
 
-<Base title={`${title} | ${SITE_TITLE}`} description={description}>
+<Base title={`${title} | ${SITE_TITLE}`} description={description} wallpaper="threeBody">
 	<article data-pagefind-body data-tone={episode.series?.tone}>
 		<PostHeader episode={episode} />
 		<div class="wrap body">
