@@ -25,8 +25,6 @@ const blog = defineCollection({
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
-			// A small looping animation for the post's tile on the home page.
-			thumbnail: z.optional(image()),
 			tags: z.array(z.string()).default([]),
 			// Place within the series, which is the folder the post is in; see `seriesOf`.
 			seriesOrder: z.number().optional(),
