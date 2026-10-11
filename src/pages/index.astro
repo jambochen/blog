@@ -5,6 +5,8 @@ import Base from '../layouts/Base.astro';
 import { countWords, getEpisodes, groupSeries } from '../lib/posts';
 
 const STANDALONE_COUNT = 8;
+// Two rows of the first grid are visible before scrolling on a desktop viewport.
+const ABOVE_FOLD_COUNT = 6;
 
 const episodes = await getEpisodes();
 // `episodes` is oldest first, so a series' place in it follows its newest episode once reversed: the series written most recently leads.
@@ -26,13 +28,13 @@ const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? '
 		</p>
 
 		{
-			allSeries.map((series) => (
+			allSeries.map((series, index) => (
 				<section>
 					<h2>
 						<a href={`/series/${series.slug}/`}>{series.name}</a>
 						<span class="count">共 {series.episodes.length} 篇</span>
 					</h2>
-					<EpisodeGrid episodes={series.episodes} />
+					<EpisodeGrid episodes={series.episodes} eagerCount={index === 0 ? ABOVE_FOLD_COUNT : 0} />
 				</section>
 			))
 		}
@@ -41,7 +43,10 @@ const words = episodes.reduce((sum, { post }) => sum + countWords(post.body ?? '
 			standalone.length > 0 && (
 				<section>
 					<h2>單篇文章</h2>
-					<EpisodeGrid episodes={standalone.slice(0, STANDALONE_COUNT)} />
+					<EpisodeGrid
+						episodes={standalone.slice(0, STANDALONE_COUNT)}
+						eagerCount={allSeries.length === 0 ? ABOVE_FOLD_COUNT : 0}
+					/>
 					{standalone.length > STANDALONE_COUNT && (
 						<p class="all">
 							<a href="/blog">看全部 {episodes.length} 篇文章</a>

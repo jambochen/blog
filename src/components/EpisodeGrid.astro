@@ -4,14 +4,16 @@ import FormattedDate from './FormattedDate.astro';
 
 interface Props {
 	episodes: Episode[];
+	/** How many leading tiles sit above the fold; lazy-loading their thumbnails would delay the first paint. */
+	eagerCount?: number;
 }
 
-const { episodes } = Astro.props;
+const { episodes, eagerCount = 0 } = Astro.props;
 ---
 
 <ol class="grid">
 	{
-		episodes.map(({ post, series }) => (
+		episodes.map(({ post, series }, index) => (
 			<li>
 				<a href={`/blog/${post.id}/`}>
 					<span class="head">
@@ -21,7 +23,15 @@ const { episodes } = Astro.props;
 							<FormattedDate date={post.data.pubDate} />
 						)}
 						{/* Decorative: the title beside it already names the post. */}
-						{post.data.thumbnail && <img src={post.data.thumbnail.src} alt="" width="300" height="200" loading="lazy" />}
+						{post.data.thumbnail && (
+							<img
+								src={post.data.thumbnail.src}
+								alt=""
+								width="300"
+								height="200"
+								loading={index < eagerCount ? 'eager' : 'lazy'}
+							/>
+						)}
 					</span>
 					<span class="title">{post.data.title}</span>
 					<span class="description">{post.data.description}</span>
