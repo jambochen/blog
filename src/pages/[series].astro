@@ -1,19 +1,19 @@
 ---
-import EpisodeList from '../components/EpisodeList.astro';
+import PostList from '../components/PostList.astro';
 import { SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
-import { getEpisodes, groupSeries, type Series } from '../lib/posts';
+import { getCatalogue, type SiteSeries } from '../lib/siteCatalogue';
 import { transitionNames } from '../lib/transitionNames';
 
 export async function getStaticPaths() {
-	return groupSeries(await getEpisodes()).map((series) => ({
-		params: { series: series.slug },
+	return (await getCatalogue()).series.map((series) => ({
+		params: { series: series.key },
 		props: { series },
 	}));
 }
 
 interface Props {
-	series: Series;
+	series: SiteSeries;
 }
 
 const { series } = Astro.props;
@@ -24,10 +24,10 @@ const { series } = Astro.props;
 	description={series.description ?? `系列「${series.name}」，共 ${series.episodes.length} 篇。`}
 >
 	<div class="wrap page">
-		<h1 style={{ viewTransitionName: transitionNames.series(series.slug) }}>{series.name}</h1>
+		<h1 style={{ viewTransitionName: transitionNames.series(series.key) }}>{series.name}</h1>
 		{series.description && <p class="about">{series.description}</p>}
 		<p class="count">共 {series.episodes.length} 篇，依閱讀順序排列。</p>
-		<EpisodeList episodes={series.episodes} showSeries={false} />
+		<PostList posts={series.episodes} showSeries={false} />
 	</div>
 </Base>
 

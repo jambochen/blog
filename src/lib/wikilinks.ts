@@ -7,23 +7,12 @@ import remarkMdx from 'remark-mdx';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
-import { isVisible, type PostRecord, placeEpisodes, seriesOf } from './series.ts';
+import { type Catalogue, episodeLabel } from './catalogue.ts';
+import type { PostFile } from './contentOnDisk.ts';
+import { seriesOf } from './series.ts';
 
-export interface PostSource extends PostRecord {
-	path: string;
-	title: string;
-	description: string;
+export interface PostSource extends PostFile {
 	url: string;
-	// The Markdown under the frontmatter.
-	body: string;
-	extension: string;
-}
-
-export interface Site {
-	posts: PostSource[];
-	showDrafts: boolean;
-	// By series key; a series without a name is shown by its key.
-	seriesNames: Record<string, string>;
 }
 
 interface Section {
@@ -33,7 +22,10 @@ interface Section {
 }
 
 interface Target extends PostSource {
-	series?: string;
+	// The page of a hidden draft is not built, so a link to it would be dead.
+	hidden: boolean;
+	seriesKey?: string;
+	seriesName?: string;
 	// Position in its series, counted over the posts a reader can open.
 	episode?: number;
 	sections: Section[];
@@ -95,14 +87,20 @@ function sectionsOf(body: string, extension: string): Section[] {
 // links to posts and their sections, with `|` introducing the text to show
 // instead of the default. Throws at a reference that matches nothing, so a
 // renamed title or heading cannot leave a dead link behind.
-export function linkWikilinks(tree: Root, path: string | undefined, site: Site): void {
-	const placements = placeEpisodes(site.posts, site.showDrafts);
-	const posts: Target[] = site.posts.map((post) => ({
+export function linkWikilinks(tree: Root, path: string | undefined, site: Catalogue<PostSource>): void {
+	const target = (post: PostSource, rest: Partial<Target>): Target => ({
 		...post,
-		series: seriesOf(post.id),
-		episode: placements.get(post.id)?.number,
+		hidden: false,
+		seriesKey: seriesOf(post.id),
 		sections: sectionsOf(post.body, post.extension),
-	}));
+		...rest,
+	});
+	const posts: Target[] = [
+		...site.posts.map(({ post, series, placement }) =>
+			target(post, { seriesName: series?.name, episode: placement?.number }),
+		),
+		...site.drafts.map((post) => target(post, { hidden: true })),
+	];
 
 	const byTitle = new Map<string, Target>();
 	for (const post of posts) {
@@ -117,9 +115,9 @@ export function linkWikilinks(tree: Root, path: string | undefined, site: Site):
 	const placeOf = (post: Target): string => {
 		if (post === self) return '本篇';
 		if (!post.episode) return '';
-		const position = `第 ${post.episode} 篇`;
-		if (post.series === self?.series) return position;
-		return `${site.seriesNames[post.series ?? ''] ?? post.series} · ${position}`;
+		const position = episodeLabel(post.episode);
+		if (post.seriesKey === self?.seriesKey) return position;
+		return `${post.seriesName} · ${position}`;
 	};
 
 	const linkFor = (source: string, title = '', heading?: string, label?: string): Link | string => {
@@ -130,8 +128,7 @@ export function linkWikilinks(tree: Root, path: string | undefined, site: Site):
 		if (heading && !section) throw new Error(`${source} names no section of ${post.path}`);
 
 		const text = label ?? (section ? `「${section.text}」` : post.title);
-		// The page of a hidden draft is not built, so a link to it would be dead.
-		if (!isVisible(post, site.showDrafts)) return text;
+		if (post.hidden) return text;
 		return {
 			type: 'link',
 			url: (post === self && section ? '' : post.url) + (section ? `#${section.slug}` : ''),

@@ -1,29 +1,30 @@
 ---
-import { type Episode, seriesPositionLabel } from '../lib/posts';
+import { episodeLabel, placementLabel } from '../lib/catalogue';
+import type { SiteEntry } from '../lib/siteCatalogue';
 import { routes } from '../lib/siteRoutes';
 import { transitionNames } from '../lib/transitionNames';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
-	episodes: Episode[];
+	posts: SiteEntry[];
 	showSeries?: boolean;
 }
 
-const { episodes, showSeries = true } = Astro.props;
+const { posts, showSeries = true } = Astro.props;
 ---
 
-<ol class="episodes">
+<ol class="posts">
 	{
-		episodes.map(({ post, series }) => (
+		posts.map(({ id, post, series, placement }) => (
 			<li>
-				<a href={routes.post(post.id)}>
+				<a href={routes.post(id)}>
 					<span class="text">
-						{series && (
+						{series && placement && (
 							<span class="series">
-								{showSeries ? `${series.name}　${seriesPositionLabel(series)}` : `第 ${series.number} 篇`}
+								{showSeries ? `${series.name}　${placementLabel(placement)}` : episodeLabel(placement.number)}
 							</span>
 						)}
-						<span class="title" style={{ viewTransitionName: transitionNames.post(post.id) }}>
+						<span class="title" style={{ viewTransitionName: transitionNames.post(id) }}>
 							{post.data.title}
 						</span>
 						<span class="description">{post.data.description}</span>
@@ -36,7 +37,7 @@ const { episodes, showSeries = true } = Astro.props;
 </ol>
 
 <style>
-	.episodes {
+	.posts {
 		list-style: none;
 		margin: 0;
 		padding: 0;

@@ -78,9 +78,9 @@ describe('placeEpisodes', () => {
 			[post('s/a', day(1)), post('t/a', day(2)), post('s/b', day(3)), post('hello', day(4))],
 			false,
 		);
-		expect(placements.get('s/a')).toEqual({ series: 's', number: 1, total: 2, unpublishedAfter: 0 });
-		expect(placements.get('s/b')).toEqual({ series: 's', number: 2, total: 2, unpublishedAfter: 0 });
-		expect(placements.get('t/a')).toEqual({ series: 't', number: 1, total: 1, unpublishedAfter: 0 });
+		expect(placements.get('s/a')).toMatchObject({ key: 's', number: 1, total: 2 });
+		expect(placements.get('s/b')).toMatchObject({ key: 's', number: 2, total: 2 });
+		expect(placements.get('t/a')).toMatchObject({ key: 't', number: 1, total: 1 });
 	});
 
 	describe('with a draft in the middle of a series', () => {
@@ -95,6 +95,12 @@ describe('placeEpisodes', () => {
 			expect(placements.has('s/b')).toBe(false);
 			expect(placements.get('s/a')).toMatchObject({ number: 1, total: 2 });
 			expect(placements.get('s/c')).toMatchObject({ number: 2, total: 2 });
+		});
+
+		it('keeps a slot for the hidden draft where it will appear', () => {
+			const placements = placeEpisodes(posts, false);
+			expect(placements.get('s/a')).toMatchObject({ slot: 1, unpublished: [2] });
+			expect(placements.get('s/c')).toMatchObject({ slot: 3, unpublished: [2] });
 		});
 
 		it('numbers the draft with the rest when drafts are shown', () => {

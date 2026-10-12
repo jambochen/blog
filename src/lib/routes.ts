@@ -16,7 +16,7 @@ export function routesFor(base: string) {
 		pagefind: `${root}/pagefind/pagefind.js`,
 
 		post: (id: string) => `${root}/${id}/`,
-		series: (slug: string) => `${root}/${slug}/`,
+		series: (key: string) => `${root}/${key}/`,
 
 		// Only a whole leading segment is the base: under `/blog`, `/blogger` is another path.
 		withoutBase: (path: string) =>

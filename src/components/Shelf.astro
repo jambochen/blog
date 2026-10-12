@@ -1,5 +1,6 @@
 ---
-import type { Episode, Tone } from '../lib/posts';
+import type { Tone } from '../lib/contentSchema';
+import type { SiteEntry } from '../lib/siteCatalogue';
 import { routes } from '../lib/siteRoutes';
 import { transitionNames } from '../lib/transitionNames';
 import FormattedDate from './FormattedDate.astro';
@@ -7,30 +8,30 @@ import FormattedDate from './FormattedDate.astro';
 interface Props {
 	name: string;
 	href: string;
-	episodes: Episode[];
+	posts: SiteEntry[];
 	tone?: Tone;
 	transitionName?: string;
 }
 
-const { name, href, episodes, tone, transitionName } = Astro.props;
+const { name, href, posts, tone, transitionName } = Astro.props;
 ---
 
 <section class="shelf" data-tone={tone}>
 	<h2>
 		<a href={href} style={transitionName && { viewTransitionName: transitionName }}>{name}</a>
-		<span class="count">共 {episodes.length} 篇</span>
+		<span class="count">共 {posts.length} 篇</span>
 	</h2>
 	<ol>
 		{
-			episodes.map(({ post, series }) => (
+			posts.map(({ id, post, placement }) => (
 				<li>
-					<a href={routes.post(post.id)}>
-						{series ? (
-							<span class="number">{String(series.number).padStart(2, '0')}</span>
+					<a href={routes.post(id)}>
+						{placement ? (
+							<span class="number">{String(placement.number).padStart(2, '0')}</span>
 						) : (
 							<FormattedDate date={post.data.pubDate} />
 						)}
-						<span class="title" style={{ viewTransitionName: transitionNames.post(post.id) }}>
+						<span class="title" style={{ viewTransitionName: transitionNames.post(id) }}>
 							{post.data.title}
 						</span>
 						<span class="description">{post.data.description}</span>

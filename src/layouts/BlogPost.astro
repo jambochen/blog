@@ -7,36 +7,35 @@ import PostOutline from '../components/PostOutline.astro';
 import ToBeContinued from '../components/ToBeContinued.astro';
 import XrefPreview from '../components/XrefPreview.astro';
 import { SITE_TITLE } from '../consts';
-import type { Episode } from '../lib/posts';
+import type { Turn } from '../lib/catalogue';
+import type { SiteEntry } from '../lib/siteCatalogue';
 import { routes } from '../lib/siteRoutes';
 import { transitionNames } from '../lib/transitionNames';
 import Base from './Base.astro';
 
 interface Props {
-	episode: Episode;
-	previous?: Episode;
-	next?: Episode;
+	entry: SiteEntry;
+	turn: Turn<SiteEntry['post']>;
 	headings: MarkdownHeading[];
 }
 
-const { episode, previous, next, headings } = Astro.props;
-const { title, description } = episode.post.data;
-const unpublishedAfter = next ? 0 : (episode.series?.unpublishedAfter ?? 0);
-const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter > 0);
+const { entry, turn, headings } = Astro.props;
+const { previous, next, stillToCome, continues } = turn;
+const { title, description } = entry.post.data;
 ---
 
 <Base title={`${title} | ${SITE_TITLE}`} description={description} wallpaper="threeBody">
-	<article data-pagefind-body data-tone={episode.series?.tone}>
-		<PostHeader episode={episode} />
+	<article data-pagefind-body data-tone={entry.series?.tone}>
+		<PostHeader entry={entry} />
 		<div class="wrap body">
 			<div class="prose">
 				<slot />
 				{
-					episode.series && (
+					entry.placement && (
 						<DangoFamily
-							total={episode.series.total}
-							current={episode.series.number}
-							unpublishedAfter={episode.series.unpublishedAfter}
+							size={entry.placement.total + entry.placement.unpublished.length}
+							current={entry.placement.slot}
+							unborn={entry.placement.unpublished}
 						/>
 					)
 				}
@@ -52,23 +51,23 @@ const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter 
 		(next || previous || continues) && (
 			<nav class:list={['wrap', 'after', 'turn', { continues }]} aria-label="前後篇">
 				{next && (
-					<a class="turn-row" href={routes.post(next.post.id)}>
+					<a class="turn-row" href={routes.post(next.id)}>
 						{continues ? <ToBeContinued label="下一篇" /> : <span class="turn-label">下一篇</span>}
-						<span class="turn-title" style={{ viewTransitionName: transitionNames.post(next.post.id) }}>
+						<span class="turn-title" style={{ viewTransitionName: transitionNames.post(next.id) }}>
 							{next.post.data.title}
 						</span>
 					</a>
 				)}
-				{unpublishedAfter > 0 && (
+				{stillToCome > 0 && (
 					<p class="turn-row">
 						<ToBeContinued />
-						<span class="turn-label">未完待續，後面還有 {unpublishedAfter} 篇</span>
+						<span class="turn-label">未完待續，後面還有 {stillToCome} 篇</span>
 					</p>
 				)}
 				{previous && (
-					<a class="turn-row" href={routes.post(previous.post.id)}>
+					<a class="turn-row" href={routes.post(previous.id)}>
 						<span class="turn-label">上一篇</span>
-						<span class="turn-title" style={{ viewTransitionName: transitionNames.post(previous.post.id) }}>
+						<span class="turn-title" style={{ viewTransitionName: transitionNames.post(previous.id) }}>
 							{previous.post.data.title}
 						</span>
 					</a>

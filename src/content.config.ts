@@ -1,6 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { file, glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { postFields, seriesSchema } from './lib/contentSchema.ts';
 
 // Load Markdown and MDX files in the `src/content/blog/` directory.
 const posts = glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' });
@@ -17,30 +18,12 @@ const blog = defineCollection({
 		},
 	},
 	// Type-check frontmatter using a schema
-	schema: ({ image }) =>
-		z.object({
-			title: z.string(),
-			description: z.string(),
-			// Transform string to Date object
-			pubDate: z.coerce.date(),
-			updatedDate: z.coerce.date().optional(),
-			heroImage: z.optional(image()),
-			tags: z.array(z.string()).default([]),
-			// Place within the series, which is the folder the post is in; see `seriesOf`.
-			seriesOrder: z.number().optional(),
-			// Drafts render in `astro dev` only.
-			draft: z.boolean().default(false),
-		}),
+	schema: ({ image }) => z.object({ ...postFields, heroImage: z.optional(image()) }),
 });
 
 const series = defineCollection({
 	loader: file('./src/content/series.json'),
-	schema: z.object({
-		name: z.string(),
-		description: z.string().optional(),
-		// Each names a `[data-tone]` rule in `global.css`; `page` leaves the colour block unfilled.
-		tone: z.enum(['page', 'indigo', 'vermilion', 'moss']),
-	}),
+	schema: seriesSchema,
 });
 
 export const collections = { blog, series };

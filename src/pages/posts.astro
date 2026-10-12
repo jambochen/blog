@@ -1,25 +1,24 @@
 ---
-import EpisodeList from '../components/EpisodeList.astro';
+import PostList from '../components/PostList.astro';
 import { SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
-import { type Episode, getEpisodes, groupSeries } from '../lib/posts';
+import { getCatalogue, type SiteEntry } from '../lib/siteCatalogue';
 import { routes } from '../lib/siteRoutes';
 
-const episodes = (await getEpisodes()).reverse();
-const allSeries = groupSeries(episodes);
+const { posts, series: allSeries } = await getCatalogue();
 
-const byYear = new Map<number, Episode[]>();
-for (const episode of episodes) {
-	const year = episode.post.data.pubDate.getUTCFullYear();
-	byYear.set(year, [...(byYear.get(year) ?? []), episode]);
+const byYear = new Map<number, SiteEntry[]>();
+for (const entry of posts) {
+	const year = entry.post.data.pubDate.getUTCFullYear();
+	byYear.set(year, [...(byYear.get(year) ?? []), entry]);
 }
 ---
 
-<Base title={`文章 | ${SITE_TITLE}`} description={`全部 ${episodes.length} 篇文章，依年份排列。`}>
+<Base title={`文章 | ${SITE_TITLE}`} description={`全部 ${posts.length} 篇文章，依年份排列。`}>
 	<div class="wrap page">
 		<h1>文章</h1>
 		{
-			episodes.length === 0 && (
+			posts.length === 0 && (
 				<p>
 					還沒有文章。在 <code>src/content/blog/</code> 新增一個 Markdown 檔就會出現在這裡。
 				</p>
@@ -32,7 +31,7 @@ for (const episode of episodes) {
 					<ul class="series">
 						{allSeries.map((series) => (
 							<li>
-								<a href={routes.series(series.slug)}>{series.name}</a>
+								<a href={routes.series(series.key)}>{series.name}</a>
 								<span class="count">共 {series.episodes.length} 篇</span>
 							</li>
 						))}
@@ -41,10 +40,10 @@ for (const episode of episodes) {
 			)
 		}
 		{
-			[...byYear].map(([year, yearEpisodes]) => (
+			[...byYear].map(([year, yearPosts]) => (
 				<section>
 					<h2 class="heading year">{year}</h2>
-					<EpisodeList episodes={yearEpisodes} />
+					<PostList posts={yearPosts} />
 				</section>
 			))
 		}

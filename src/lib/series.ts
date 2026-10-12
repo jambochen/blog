@@ -11,10 +11,15 @@ export interface PostRecord {
 }
 
 export interface Placement {
-	series: string;
+	key: string;
+	// Both counted over the episodes a reader can open.
 	number: number;
 	total: number;
-	// A count only, so the titles of unpublished episodes stay out of the build.
+	// Place among every episode of the series, hidden drafts included, from 1.
+	slot: number;
+	// The slots of the hidden drafts. Slots only, so the titles of unpublished
+	// episodes stay out of the build.
+	unpublished: number[];
 	unpublishedAfter: number;
 }
 
@@ -42,28 +47,31 @@ function bySeriesOrder(a: Ordered, b: Ordered): number {
 }
 
 // Keyed by post id. Standalone posts and hidden drafts have no entry; hidden
-// drafts are still counted in the `unpublishedAfter` of the episodes before them.
+// drafts still take a slot in their series.
 export function placeEpisodes(posts: PostRecord[], showDrafts: boolean): Map<string, Placement> {
 	const members = new Map<string, PostRecord[]>();
 	for (const post of posts) {
-		const series = seriesOf(post.id);
-		if (series) members.set(series, [...(members.get(series) ?? []), post]);
+		const key = seriesOf(post.id);
+		if (key) members.set(key, [...(members.get(key) ?? []), post]);
 	}
 
 	const placements = new Map<string, Placement>();
-	for (const [series, all] of members) {
-		const hidden = all.filter((post) => !isVisible(post, showDrafts));
-		const visible = all
-			.filter((post) => isVisible(post, showDrafts))
-			// Two episodes given the same `seriesOrder` fall back to their dates,
-			// so the numbers do not depend on the order the posts were read in.
-			.sort((a, b) => bySeriesOrder(a, b) || a.pubDate - b.pubDate);
+	for (const [key, all] of members) {
+		// Two episodes given the same `seriesOrder` fall back to their dates,
+		// so the numbers do not depend on the order the posts were read in.
+		const ordered = [...all].sort((a, b) => bySeriesOrder(a, b) || a.pubDate - b.pubDate);
+		const slotOf = (post: PostRecord) => ordered.indexOf(post) + 1;
+		const unpublished = ordered.filter((post) => !isVisible(post, showDrafts)).map(slotOf);
+		const visible = ordered.filter((post) => isVisible(post, showDrafts));
 		visible.forEach((post, index) => {
+			const slot = slotOf(post);
 			placements.set(post.id, {
-				series,
+				key,
 				number: index + 1,
 				total: visible.length,
-				unpublishedAfter: hidden.filter((draft) => bySeriesOrder(draft, post) > 0).length,
+				slot,
+				unpublished,
+				unpublishedAfter: unpublished.filter((other) => other > slot).length,
 			});
 		});
 	}

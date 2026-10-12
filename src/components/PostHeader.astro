@@ -1,33 +1,34 @@
 ---
-import { type Episode, seriesPositionLabel } from '../lib/posts';
+import { placementLabel } from '../lib/catalogue';
+import type { SiteEntry } from '../lib/siteCatalogue';
 import { routes } from '../lib/siteRoutes';
 import { transitionNames } from '../lib/transitionNames';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
-	episode: Episode;
+	entry: SiteEntry;
 }
 
-const { episode } = Astro.props;
-const { series } = episode;
-const { title, description, pubDate, updatedDate, tags } = episode.post.data;
+const { entry } = Astro.props;
+const { series, placement } = entry;
+const { title, description, pubDate, updatedDate, tags } = entry.post.data;
 ---
 
 <header class="post-header">
 	<div class="wrap inner">
 		{/* Decorative: the series line below states the position in words. */}
-		{series && <span class="number" aria-hidden="true">{String(series.number).padStart(2, '0')}</span>}
+		{placement && <span class="number" aria-hidden="true">{String(placement.number).padStart(2, '0')}</span>}
 		{
-			series && (
+			series && placement && (
 				<p class="series">
-					<a href={routes.series(series.slug)} style={{ viewTransitionName: transitionNames.series(series.slug) }}>
+					<a href={routes.series(series.key)} style={{ viewTransitionName: transitionNames.series(series.key) }}>
 						{series.name}
 					</a>
-					<span>{seriesPositionLabel(series)}</span>
+					<span>{placementLabel(placement)}</span>
 				</p>
 			)
 		}
-		<h1 style={{ viewTransitionName: transitionNames.post(episode.post.id) }}>{title}</h1>
+		<h1 style={{ viewTransitionName: transitionNames.post(entry.id) }}>{title}</h1>
 		<p class="description">{description}</p>
 		<p class="meta">
 			<span>發佈於 <FormattedDate date={pubDate} /></span>

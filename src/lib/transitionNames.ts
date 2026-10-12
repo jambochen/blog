@@ -8,5 +8,5 @@ const identifier = (text: string) => text.replace(/[^\p{L}\p{N}_-]/gu, '-');
 
 export const transitionNames = {
 	post: (id: string) => `post-${identifier(id)}`,
-	series: (slug: string) => `series-${identifier(slug)}`,
+	series: (key: string) => `series-${identifier(key)}`,
 };

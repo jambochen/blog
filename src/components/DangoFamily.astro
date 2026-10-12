@@ -1,11 +1,13 @@
 ---
 interface Props {
-	total: number;
+	// Every episode of the series, the unpublished ones included.
+	size: number;
+	// Both count from 1.
 	current: number;
-	unpublishedAfter: number;
+	unborn: number[];
 }
 
-const { total, current, unpublishedAfter } = Astro.props;
+const { size, current, unborn: unbornSlots } = Astro.props;
 
 // Each outline is a darker crayon of the fill's own hue.
 const CRAYONS = [
@@ -18,14 +20,14 @@ const CRAYONS = [
 	{ fill: '#f3ead8', line: '#b9a684' },
 ];
 const SIZES = [1, 0.84, 1.12, 0.9, 1.04, 0.8, 0.96];
-const family = Array.from({ length: total + unpublishedAfter }, (_, index) => ({
+const family = Array.from({ length: size }, (_, index) => ({
 	index,
 	...CRAYONS[index % CRAYONS.length],
 	// Five and seven share no factor, so a size meets the same colour again only after 35 dango.
 	size: SIZES[(index * 5) % SIZES.length],
 	facesLeft: index % 3 === 1,
 	current: index + 1 === current,
-	unborn: index >= total,
+	unborn: unbornSlots.includes(index + 1),
 }));
 ---
 

@@ -5,7 +5,8 @@ import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
 import { describe, expect, it } from 'vitest';
-import { linkWikilinks, type PostSource, type Site } from './wikilinks.ts';
+import { catalogue } from './catalogue.ts';
+import { linkWikilinks, type PostSource } from './wikilinks.ts';
 
 const parser = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
 
@@ -25,11 +26,27 @@ function post(id: string, title: string, body = '', rest: Partial<PostSource> = 
 }
 
 // Links the body of the post with `id` and returns what a reader would get.
-function linked(posts: PostSource[], id: string, site: Partial<Site> = {}) {
+interface Site {
+	showDrafts?: boolean;
+	seriesNames?: Record<string, string>;
+}
+
+function linked(posts: PostSource[], id: string, { showDrafts = false, seriesNames = {} }: Site = {}) {
 	const self = posts.find((candidate) => candidate.id === id);
 	if (!self) throw new Error(`no post ${id}`);
 	const tree: Root = parser.parse(self.body);
-	linkWikilinks(tree, self.path, { posts, showDrafts: false, seriesNames: {}, ...site });
+	const registry = Object.fromEntries(
+		Object.entries(seriesNames).map(([key, name]) => [key, { name, tone: 'page' as const }]),
+	);
+	linkWikilinks(
+		tree,
+		self.path,
+		catalogue(
+			posts.map((post) => ({ ...post, post })),
+			registry,
+			showDrafts,
+		),
+	);
 
 	const links: { url: string; text: string; data: Record<string, unknown> }[] = [];
 	visit(tree, 'link', (node: Link) => {
@@ -122,7 +139,7 @@ describe('linkWikilinks', () => {
 			post('t/other', 'Other'),
 			post('alone', 'Alone'),
 		];
-		const places = (site: Partial<Site> = {}) =>
+		const places = (site: Site = {}) =>
 			linked(posts, 's/one', site).links.map(({ data }) => data['data-place']);
 
 		it('is the episode number inside the same series', () => {
@@ -171,9 +188,7 @@ describe('linkWikilinks', () => {
 		});
 
 		it('fails when two posts share a title', () => {
-			expect(failure('', [post('b', 'Same'), post('c', 'Same')])).toThrow(
-				'"Same" is the title of both /content/b.md and /content/c.md',
-			);
+			expect(failure('', [post('b', 'Same'), post('c', 'Same')])).toThrow('"Same" is the title of both');
 		});
 	});
 });

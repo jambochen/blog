@@ -2,16 +2,13 @@
 import Shelf from '../components/Shelf.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
-import { getEpisodes, groupSeries } from '../lib/posts';
+import { getCatalogue } from '../lib/siteCatalogue';
 import { routes } from '../lib/siteRoutes';
 import { transitionNames } from '../lib/transitionNames';
 
 const STANDALONE_COUNT = 8;
 
-const episodes = await getEpisodes();
-// `episodes` is oldest first, so a series' place in it follows its newest episode once reversed: the series written most recently leads.
-const allSeries = groupSeries([...episodes].reverse());
-const standalone = episodes.filter((episode) => !episode.series).reverse();
+const { posts, series: allSeries, standalone } = await getCatalogue();
 ---
 
 <Base title={SITE_TITLE} description={SITE_DESCRIPTION}>
@@ -22,29 +19,29 @@ const standalone = episodes.filter((episode) => !episode.series).reverse();
 			allSeries.map((series) => (
 				<Shelf
 					name={series.name}
-					href={routes.series(series.slug)}
-					episodes={series.episodes}
+					href={routes.series(series.key)}
+					posts={series.episodes}
 					tone={series.tone}
-					transitionName={transitionNames.series(series.slug)}
+					transitionName={transitionNames.series(series.key)}
 				/>
 			))
 		}
 
 		{
 			standalone.length > 0 && (
-				<Shelf name="單篇文章" href={routes.posts} episodes={standalone.slice(0, STANDALONE_COUNT)} />
+				<Shelf name="單篇文章" href={routes.posts} posts={standalone.slice(0, STANDALONE_COUNT)} />
 			)
 		}
 		{
 			standalone.length > STANDALONE_COUNT && (
 				<p class="all">
-					<a href={routes.posts}>看全部 {episodes.length} 篇文章</a>
+					<a href={routes.posts}>看全部 {posts.length} 篇文章</a>
 				</p>
 			)
 		}
 
 		{
-			episodes.length === 0 && (
+			posts.length === 0 && (
 				<p>
 					還沒有文章。在 <code>src/content/blog/</code> 新增一個 Markdown 檔，它就會出現在這裡。
 				</p>
