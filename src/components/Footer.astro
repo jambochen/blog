@@ -1,5 +1,6 @@
 ---
-import { SITE_TITLE } from '../consts';
+import { Icon } from 'astro-icon/components';
+import { GITHUB_URL, SITE_TITLE } from '../consts';
 import { withBase } from '../lib/paths';
 
 const today = new Date();
@@ -9,8 +10,8 @@ const today = new Date();
 	<div class="row">
 		<span>&copy; {today.getFullYear()} {SITE_TITLE}</span>
 		<span class="links">
-			<a href="https://github.com/JamboChen">GitHub</a>
-			<a href={withBase('/rss.xml')}>RSS 訂閱</a>
+			<a href={GITHUB_URL} rel="me" aria-label="GitHub" title="GitHub"><Icon name="mdi:github" /></a>
+			<a href={withBase('/rss.xml')} aria-label="RSS 訂閱" title="RSS 訂閱"><Icon name="mdi:rss" /></a>
 		</span>
 	</div>
 </footer>
@@ -30,9 +31,17 @@ const today = new Date();
 	}
 	.links {
 		display: flex;
-		gap: 1.25rem;
+		align-items: center;
+		gap: 1rem;
 	}
 	a {
+		display: flex;
 		color: inherit;
+	}
+	a:hover {
+		color: var(--ink);
+	}
+	.links :global(svg) {
+		font-size: 1.25rem;
 	}
 </style>

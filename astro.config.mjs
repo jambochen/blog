@@ -4,6 +4,7 @@ import { unified } from '@astrojs/markdown-remark';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import expressiveCode from 'astro-expressive-code';
+import icon from 'astro-icon';
 import { defineConfig, fontProviders } from 'astro/config';
 import rehypeMathjax from 'rehype-mathjax';
 import remarkMath from 'remark-math';
@@ -50,6 +51,7 @@ export default defineConfig({
 		}),
 		mdx(),
 		sitemap(),
+		icon(),
 		wikilinkCheck(),
 	],
 	markdown: {

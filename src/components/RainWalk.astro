@@ -1,0 +1,37 @@
+---
+import walk from '../assets/bocchi-walk.mp4';
+---
+
+<video class="rain-walk" src={walk} width="330" height="360" autoplay loop muted playsinline disablepictureinpicture aria-hidden="true"
+></video>
+
+<script>
+	const video = document.querySelector<HTMLVideoElement>('.rain-walk');
+	if (video && matchMedia('(prefers-reduced-motion: reduce)').matches) video.pause();
+</script>
+
+<style>
+	/* The clip has no alpha channel: its background is graded to pure black, and blending drops that black out. On the light page the frame is inverted first, with the hue turned back so the blue stays blue. */
+	.rain-walk {
+		display: block;
+		width: 7rem;
+		height: auto;
+		margin: 2rem 0 0 auto;
+		pointer-events: none;
+		filter: invert(1) hue-rotate(180deg);
+		mix-blend-mode: multiply;
+	}
+	:global([data-theme='dark']) .rain-walk {
+		filter: none;
+		mix-blend-mode: screen;
+	}
+	/* From here the margin beside the 66rem column is wider than the figure, so it leaves the flow for the corner. */
+	@media (min-width: 75rem) {
+		.rain-walk {
+			position: fixed;
+			right: 0.75rem;
+			bottom: 0;
+			margin: 0;
+		}
+	}
+</style>

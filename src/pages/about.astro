@@ -1,15 +1,183 @@
 ---
-import { SITE_TITLE } from '../consts';
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import avatar from '../assets/avatar.jpg';
+import RainWalk from '../components/RainWalk.astro';
+import { CONTACT_LINKS, SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
 ---
 
 <Base title={`關於 | ${SITE_TITLE}`} description={`關於 ${SITE_TITLE} 和這個博客。`}>
 	<div class="wrap page">
-		<h1>關於</h1>
-		<div class="prose">
-			<p>我是 Jambo，目前還是學生。</p>
-			<p>這裡的文章是我想寫便寫下來的，多半出自讀電腦科學、數學與統計時的筆記，寫下來也算留個記錄。</p>
-			<p>程式碼和其他專案在 <a href="https://github.com/JamboChen">GitHub</a>。</p>
-		</div>
+		<section class="sheet">
+			<header>
+				<h1><span>關於</span></h1>
+				<Image class="avatar" src={avatar} alt="Jambo 的 GitHub 頭像" width={176} height={176} densities={[1, 2]} />
+			</header>
+			<div class="body">
+				<div class="bio">
+					<p>我是 Jambo，目前還是學生。</p>
+					<p>這裡的文章是我想寫便寫下來的，多半出自讀電腦科學、數學與統計時的筆記，寫下來也算留個記錄。</p>
+				</div>
+				<ul aria-label="聯繫方式">
+					{
+						CONTACT_LINKS.map(({ icon, label, text, note, href }) => (
+							<li>
+								<a href={href} rel="me" aria-label={`${label}：${text}`}>
+									<Icon name={icon} />
+									<span class="text">{text}</span>
+									<span class="note">{note}</span>
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</div>
+		</section>
+		<RainWalk />
 	</div>
 </Base>
+
+<style>
+	.sheet {
+		border-block: 0.3rem solid var(--ink);
+	}
+	header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		padding-block: 1.25rem;
+	}
+	h1 {
+		flex: 1;
+		margin: 0;
+		font-family: var(--font-mincho);
+		font-weight: 900;
+		font-size: 2.441rem;
+		line-height: 1.15;
+	}
+	/* The heavy mincho has no condensed cut, so the glyphs are squeezed, as on the series titles. */
+	h1 span {
+		display: block;
+		transform: scaleX(0.76);
+		transform-origin: left top;
+		letter-spacing: -0.02em;
+	}
+	.avatar {
+		flex: none;
+		width: 5rem;
+		height: auto;
+		border: 1px solid var(--ink);
+		border-radius: 50%;
+	}
+	.bio {
+		max-width: var(--measure);
+		padding-block: 1rem;
+		border-top: 1px solid var(--rule);
+	}
+	.bio p {
+		margin: 0;
+	}
+	.bio p + p {
+		margin-top: 0.75rem;
+	}
+	ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	li {
+		border-top: 1px solid var(--rule);
+	}
+	li a {
+		display: grid;
+		grid-template-columns: 2.75rem minmax(0, 1fr);
+		column-gap: 0.5rem;
+		align-items: center;
+		padding: 0.9rem 0 1rem;
+		color: inherit;
+		text-decoration: none;
+		transition:
+			background-color 0.15s ease,
+			color 0.15s ease;
+	}
+	li :global(svg) {
+		grid-row: span 2;
+		font-size: 1.563rem;
+	}
+	.text {
+		font-family: var(--font-mincho);
+		font-weight: 700;
+		font-size: 1.25rem;
+		line-height: 1.45;
+	}
+	.note {
+		grid-column: 2;
+		font-size: 0.85rem;
+		line-height: 1.6;
+		opacity: 0.85;
+	}
+	li a:hover,
+	li a:focus-visible {
+		background: var(--ink);
+		color: var(--paper);
+	}
+	li a:focus-visible {
+		outline-offset: -4px;
+	}
+
+	@media (min-width: 52rem) {
+		.sheet {
+			display: grid;
+			grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+		}
+		header {
+			flex-direction: column;
+			align-items: flex-start;
+			justify-content: flex-start;
+			gap: 1.5rem;
+			padding: 1.75rem 1.5rem 1.75rem 0;
+		}
+		h1 {
+			flex: none;
+			font-size: 3.815rem;
+		}
+		.avatar {
+			width: 11rem;
+		}
+		.body {
+			border-left: 1px solid var(--rule);
+		}
+		.bio {
+			max-width: none;
+			padding: 1.5rem;
+			border-top: 0;
+		}
+		.bio p {
+			max-width: var(--measure);
+		}
+		li a {
+			grid-template-columns: 3.25rem minmax(0, 1fr);
+			column-gap: 1rem;
+			padding: 0.85rem 1.5rem 0.95rem;
+		}
+	}
+	/* The e-mail address cannot break, so the note moves beside it only where the column holds both. */
+	@media (min-width: 62rem) {
+		li a {
+			grid-template-columns: 3.25rem minmax(0, 7fr) minmax(0, 4fr);
+		}
+		li :global(svg) {
+			grid-row: auto;
+		}
+		.note {
+			grid-column: 3;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		li a {
+			transition: none;
+		}
+	}
+</style>
