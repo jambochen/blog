@@ -1,5 +1,5 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
-import { isVisible, placeEpisodes, seriesOf } from './series.ts';
+import { isVisible, placeEpisodes, seriesProblems } from './series.ts';
 
 type Post = CollectionEntry<'blog'>;
 
@@ -30,10 +30,16 @@ export interface Series {
 	episodes: Episode[];
 }
 
-// Series and standalone posts are served from the site's root, beside these pages.
-const PAGES = Object.keys(import.meta.glob('../pages/*')).map((path) =>
-	path.replace('../pages/', '').replace(/\.[^.]+$/, ''),
-);
+// Series and standalone posts are served from the site's root, beside these
+// pages and the folders a build writes there.
+const RESERVED = new Map([
+	...Object.keys(import.meta.glob('../pages/*')).map((path) => {
+		const name = path.replace('../pages/', '').replace(/\.[^.]+$/, '');
+		return [name, `the page src/pages/${name}`] as const;
+	}),
+	['_astro', 'the folder a build writes its assets to'],
+	['pagefind', 'the folder a build writes the search index to'],
+]);
 
 const byPubDate = (a: Post, b: Post) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf();
 
@@ -49,25 +55,12 @@ export async function getEpisodes(): Promise<Episode[]> {
 	const registry = new Map(
 		(await getCollection('series')).map((entry) => [entry.id, entry.data] as const),
 	);
-	for (const post of everyPost) {
-		const slug = seriesOf(post.id);
-		if (slug && !registry.has(slug)) {
-			throw new Error(`${post.filePath ?? post.id}: folder "${slug}" is not in src/content/series.json`);
-		}
-		const [name] = post.id.split('/');
-		if (name && PAGES.includes(name)) {
-			throw new Error(`${post.filePath ?? post.id}: "${name}" is already the page src/pages/${name}`);
-		}
-		// The post and the series page would both be served at `/<id>/`.
-		if (registry.has(post.id)) {
-			throw new Error(`${post.filePath ?? post.id}: a standalone post cannot share the name of series "${post.id}"`);
-		}
-	}
-	for (const slug of registry.keys()) {
-		if (!everyPost.some((post) => seriesOf(post.id) === slug)) {
-			throw new Error(`src/content/series.json: "${slug}" has no folder of posts in src/content/blog`);
-		}
-	}
+	const problems = seriesProblems(
+		everyPost.map(({ id, filePath }) => ({ id, path: filePath })),
+		[...registry.keys()],
+		RESERVED,
+	);
+	if (problems.length) throw new Error(problems.join('\n'));
 
 	const placements = placeEpisodes(
 		everyPost.map(({ id, data }) => ({
@@ -83,7 +76,7 @@ export async function getEpisodes(): Promise<Episode[]> {
 		const placement = placements.get(post.id);
 		if (!placement) return { post, series: undefined };
 		const { series: slug, number, total, unpublishedAfter } = placement;
-		// The `!` is safe: every folder was found in the registry above.
+		// The `!` is safe: a folder missing from the registry is one of the problems thrown above.
 		const { name, description, tone } = registry.get(slug)!;
 		return { post, series: { name, slug, description, tone, number, total, unpublishedAfter } };
 	});

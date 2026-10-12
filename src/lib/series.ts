@@ -69,3 +69,36 @@ export function placeEpisodes(posts: PostRecord[], showDrafts: boolean): Map<str
 	}
 	return placements;
 }
+
+// One line a problem, each naming the file to fix. Series pages and standalone
+// posts are served at `/<name>/`, so `reserved` maps every name already taken
+// at the site's root to what holds it.
+export function seriesProblems(
+	posts: { id: string; path?: string }[],
+	registered: string[],
+	reserved: Map<string, string>,
+): string[] {
+	const problems: string[] = [];
+	const folders = new Set<string>();
+	for (const { id, path = id } of posts) {
+		const folder = seriesOf(id);
+		const [name] = id.split('/');
+		if (folder) {
+			// A folder's mistake is reported at its first post rather than at every one.
+			if (folders.has(folder)) continue;
+			folders.add(folder);
+			if (!registered.includes(folder)) {
+				problems.push(`${path}: folder "${folder}" is not in src/content/series.json`);
+			}
+		} else if (registered.includes(id)) {
+			problems.push(`${path}: a standalone post cannot share the name of series "${id}"`);
+		}
+		if (reserved.has(name)) problems.push(`${path}: "${name}" is already ${reserved.get(name)}`);
+	}
+	for (const series of registered) {
+		if (!folders.has(series)) {
+			problems.push(`src/content/series.json: "${series}" has no folder of posts in src/content/blog`);
+		}
+	}
+	return problems;
+}

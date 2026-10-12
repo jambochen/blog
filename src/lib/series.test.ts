@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isVisible, type PostRecord, placeEpisodes, seriesOf } from './series.ts';
+import { isVisible, type PostRecord, placeEpisodes, seriesOf, seriesProblems } from './series.ts';
 
 const day = (n: number) => Date.UTC(2026, 0, n);
 
@@ -134,5 +134,48 @@ describe('placeEpisodes', () => {
 			);
 			expect(placements.get('s/a')?.unpublishedAfter).toBe(1);
 		});
+	});
+});
+
+describe('seriesProblems', () => {
+	const reserved = new Map([['about', 'the page src/pages/about']]);
+	const problems = (ids: string[], registered: string[] = []) =>
+		seriesProblems(
+			ids.map((id) => ({ id })),
+			registered,
+			reserved,
+		);
+
+	it('finds none when every folder is registered and every entry has a folder', () => {
+		expect(problems(['s/a', 's/b', 'alone'], ['s'])).toEqual([]);
+	});
+
+	it('names a folder that has no entry, once for the folder', () => {
+		expect(problems(['s/a', 's/b'])).toEqual(['s/a: folder "s" is not in src/content/series.json']);
+	});
+
+	it('names an entry that has no folder', () => {
+		expect(problems(['alone'], ['s'])).toEqual([
+			'src/content/series.json: "s" has no folder of posts in src/content/blog',
+		]);
+	});
+
+	it('names a standalone post called like a series', () => {
+		expect(problems(['s/a', 's'], ['s'])).toEqual(['s: a standalone post cannot share the name of series "s"']);
+	});
+
+	it('names a standalone post or a series that takes a reserved name', () => {
+		expect(problems(['about'])).toEqual(['about: "about" is already the page src/pages/about']);
+		expect(problems(['about/a'], ['about'])).toEqual(['about/a: "about" is already the page src/pages/about']);
+	});
+
+	it('names the file when the post has a path', () => {
+		expect(seriesProblems([{ id: 's/a', path: 'src/content/blog/s/a.md' }], [], reserved)).toEqual([
+			'src/content/blog/s/a.md: folder "s" is not in src/content/series.json',
+		]);
+	});
+
+	it('reports every problem rather than the first', () => {
+		expect(problems(['s/a', 'about'], ['t'])).toHaveLength(3);
 	});
 });
