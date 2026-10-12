@@ -2,6 +2,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseFrontmatter } from '@astrojs/markdown-remark';
 import GithubSlugger, { slug as slugify } from 'github-slugger';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import remarkMdx from 'remark-mdx';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
 
 interface MdastNode {
 	type: string;
@@ -33,12 +38,28 @@ interface Post {
 
 const EXCERPT_LENGTH = 80;
 
-function plainText(markdown: string): string {
-	return markdown
+// The syntax Astro reads the posts with, so a heading here is a heading there.
+const markdown = unified().use(remarkParse).use(remarkGfm).use(remarkMath);
+// Kept apart because MDX rejects a stray `<` or `{`, which a `.md` post may hold.
+const mdx = markdown().use(remarkMdx);
+
+// A node's text without its markup. Raw HTML tags and images add nothing, as on
+// the rendered page; `formulas` keeps the LaTeX source, which the page's ids drop.
+function textOf(node: MdastNode, formulas: boolean): string {
+	if (node.type === 'inlineMath') return formulas ? `$${node.value}$` : '';
+	if (node.type === 'html' || node.type === 'image') return '';
+	return node.children?.map((child) => textOf(child, formulas)).join('') ?? node.value ?? '';
+}
+
+// Figures, tables, quotes and display math do not read as a summary, so only a
+// paragraph or the first item of a list gives one.
+function excerptOf(node: MdastNode): string {
+	const lead = node.type === 'list' ? node.children?.[0]?.children?.[0] : node;
+	if (lead?.type !== 'paragraph') return '';
+	const prose = textOf(lead, true)
 		.replace(/\[\[(?:[^[\]|]*\|)?([^[\]|]*)\]\]/g, (_, shown: string) => shown.replace(/^.*#/, ''))
-		.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-		.replace(/^(?:[-*]|\d+\.)\s+/, '')
-		.replace(/[`*]/g, '');
+		.trim();
+	return prose.length > EXCERPT_LENGTH ? `${prose.slice(0, EXCERPT_LENGTH)}…` : prose;
 }
 
 const CONTENT_DIR = resolve('src/content/blog');
@@ -63,34 +84,22 @@ export function wikilinkCheck() {
 // Has to produce the ids Astro gives the rendered headings, or the links land
 // nowhere: Astro slugs a heading's text with inline code kept and formulas
 // dropped, and numbers repeated slugs in document order.
-function sectionsOf(body: string): Section[] {
+function sectionsOf(body: string, extension: string): Section[] {
 	const slugger = new GithubSlugger();
 	const sections: Section[] = [];
-	let fence: string | undefined;
-	for (const line of body.split('\n')) {
-		const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
-		if (marker) {
-			if (!fence) fence = marker;
-			else if (marker[0] === fence[0] && marker.length >= fence.length) fence = undefined;
-			continue;
+	const visit = (parent: MdastNode, nested: boolean) => {
+		for (const node of parent.children ?? []) {
+			if (node.type === 'heading') {
+				sections.push({ text: textOf(node, true), slug: slugger.slug(textOf(node, false)), excerpt: '' });
+				continue;
+			}
+			const section = sections.at(-1);
+			if (section && !section.excerpt && !nested) section.excerpt = excerptOf(node);
+			// Astro numbers the headings inside quotes and components along with the rest.
+			visit(node, true);
 		}
-		if (fence) continue;
-		const heading = /^#{1,6}\s+(.*\S)\s*$/.exec(line)?.[1];
-		if (heading) {
-			const text = heading.replaceAll('`', '');
-			sections.push({ text, slug: slugger.slug(text.replace(/\$[^$]*\$/g, '')), excerpt: '' });
-			continue;
-		}
-		const section = sections.at(-1);
-		// Lines opening with these characters are components, imports, tables,
-		// images, quotes or display math, none of which read as a summary.
-		if (!section || section.excerpt || !line.trim() || /^\s*(?:[<|!>{$]|import |export )/.test(line)) {
-			continue;
-		}
-		const prose = plainText(line.trim());
-		section.excerpt =
-			prose.length > EXCERPT_LENGTH ? `${prose.slice(0, EXCERPT_LENGTH)}…` : prose;
-	}
+	};
+	visit((extension === '.mdx' ? mdx : markdown).parse(body) as MdastNode, false);
 	return sections;
 }
 
@@ -118,7 +127,7 @@ function readPosts(isBuild: boolean, base: string): Post[] {
 			series: segments.length > 1 ? segments[0] : undefined,
 			seriesOrder: frontmatter.seriesOrder,
 			pubDate: new Date(frontmatter.pubDate).valueOf(),
-			sections: sectionsOf(content),
+			sections: sectionsOf(content, extension),
 		});
 	}
 
