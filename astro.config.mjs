@@ -31,6 +31,12 @@ const BASE = '/blog';
 export default defineConfig({
 	site: 'https://jambochen.github.io',
 	base: BASE,
+	prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+	experimental: {
+		// Chromium renders the hovered page in the background, fonts included, so the
+		// title's heavy weight is already there on arrival; other browsers fetch the HTML only.
+		clientPrerender: true,
+	},
 	integrations: [
 		// Has to come before mdx() so MDX code blocks go through it too.
 		expressiveCode({
