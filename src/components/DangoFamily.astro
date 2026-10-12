@@ -1,0 +1,136 @@
+---
+interface Props {
+	total: number;
+	current: number;
+	unpublishedAfter: number;
+}
+
+const { total, current, unpublishedAfter } = Astro.props;
+
+// Each outline is a darker crayon of the fill's own hue.
+const CRAYONS = [
+	{ fill: '#f6c3bd', line: '#d9736b' },
+	{ fill: '#a9d5d6', line: '#5fa3a8' },
+	{ fill: '#d3cd7c', line: '#a39a3c' },
+	{ fill: '#c4a78e', line: '#8c6a50' },
+	{ fill: '#c5e3bf', line: '#7fae78' },
+	{ fill: '#f5c0a4', line: '#d98558' },
+	{ fill: '#f3ead8', line: '#b9a684' },
+];
+const SIZES = [1, 0.84, 1.12, 0.9, 1.04, 0.8, 0.96];
+const family = Array.from({ length: total + unpublishedAfter }, (_, index) => ({
+	index,
+	...CRAYONS[index % CRAYONS.length],
+	// Five and seven share no factor, so a size meets the same colour again only after 35 dango.
+	size: SIZES[(index * 5) % SIZES.length],
+	facesLeft: index % 3 === 1,
+	current: index + 1 === current,
+	unborn: index >= total,
+}));
+---
+
+{/* Decorative: the post header states the position in words. */}
+<p class="family" aria-hidden="true">
+	<svg class="defs" width="0" height="0">
+		<filter id="dango-crayon" x="-6%" y="-8%" width="112%" height="116%">
+			<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="4" result="grain"></feTurbulence>
+			<feDisplacementMap in="SourceGraphic" in2="grain" scale="1.1"></feDisplacementMap>
+		</filter>
+	</svg>
+	{
+		family.map(({ index, fill, line, size, facesLeft, current, unborn }) => (
+			<svg
+				class:list={['dango', { current, unborn }]}
+				viewBox="0 0 60 48"
+				style={{ '--i': index, '--size': size, '--fill': fill, '--line': line }}
+			>
+				<g filter={unborn ? undefined : 'url(#dango-crayon)'} transform={facesLeft ? undefined : 'translate(60 0) scale(-1 1)'}>
+					<path class="body" d="M6 43 C-2 26 9 4 30 4 C51 4 62 26 54 43 C52 46 8 46 6 43 Z" />
+					{!unborn && (
+						<>
+							<circle class="cheek" cx="12.5" cy="33" r="4.5" />
+							<circle class="cheek" cx="34" cy="33.5" r="4.5" />
+							<path class="eyes" d="M18.6 18.5 L19.6 29 M25.4 18 L26.2 29" />
+						</>
+					)}
+				</g>
+			</svg>
+		))
+	}
+</p>
+
+<style>
+	.family {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		row-gap: 1rem;
+		max-width: var(--measure);
+		margin: 3.5rem 0 0;
+		/* Makes room for the overlap of the first dango, which has no neighbour to lean on. */
+		padding-left: 0.3rem;
+	}
+	.defs {
+		position: absolute;
+	}
+	.dango {
+		flex: none;
+		width: calc(2.7rem * var(--size));
+		margin-left: -0.3rem;
+		overflow: visible;
+		transform-origin: 50% 100%;
+	}
+	.body {
+		fill: var(--fill);
+		stroke: var(--line);
+		stroke-width: 2.4;
+		stroke-linejoin: round;
+	}
+	.cheek {
+		fill: var(--line);
+		opacity: 0.5;
+	}
+	.eyes {
+		fill: none;
+		/* The same drawn object in both themes, so the eyes do not follow the page's ink. */
+		stroke: #2a2320;
+		stroke-width: 1.9;
+		stroke-linecap: round;
+	}
+	.unborn .body {
+		fill: none;
+		stroke: var(--muted);
+		stroke-dasharray: 3 3;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.dango {
+			animation: sway 2.4s ease-in-out infinite;
+			animation-delay: calc(var(--i) * -0.17s);
+		}
+		.dango.current {
+			animation-name: hop;
+			animation-duration: 1.2s;
+		}
+		.dango:hover {
+			animation: hop 0.6s ease-in-out infinite;
+		}
+		.dango.unborn {
+			animation: none;
+		}
+	}
+	@keyframes sway {
+		50% {
+			scale: 1.05 0.93;
+		}
+	}
+	@keyframes hop {
+		0%,
+		100% {
+			scale: 1.1 0.86;
+		}
+		50% {
+			translate: 0 -0.7rem;
+			scale: 0.95 1.07;
+		}
+	}
+</style>

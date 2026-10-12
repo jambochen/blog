@@ -1,5 +1,6 @@
 ---
 import type { MarkdownHeading } from 'astro';
+import DangoFamily from '../components/DangoFamily.astro';
 import MermaidDiagrams from '../components/MermaidDiagrams.astro';
 import PostHeader from '../components/PostHeader.astro';
 import PostOutline from '../components/PostOutline.astro';
@@ -30,6 +31,15 @@ const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter 
 		<div class="wrap body">
 			<div class="prose">
 				<slot />
+				{
+					episode.series && (
+						<DangoFamily
+							total={episode.series.total}
+							current={episode.series.number}
+							unpublishedAfter={episode.series.unpublishedAfter}
+						/>
+					)
+				}
 			</div>
 			<aside class="side" data-pagefind-ignore>
 				<PostOutline headings={headings} />
