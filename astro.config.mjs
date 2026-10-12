@@ -16,7 +16,7 @@ import { remarkWikilinks, wikilinkCheck } from './src/lib/remarkWikilinks.ts';
 // The Latin faces sit in front of the CJK face in one font-family stack, so they
 // must not carry a generic fallback: `serif` would match first and swallow every
 // Chinese glyph before the stack reaches the CJK face.
-const latinOnly = { fallbacks: [], optimizedFallbacks: false, subsets: ['latin'] };
+const latinOnly = { fallbacks: [], optimizedFallbacks: false, subsets: /** @type {[string]} */ (['latin']) };
 
 // GitHub Pages serves a project site under the repository name. Also handed to
 // the wikilink plugin, which runs outside Vite and cannot read `BASE_URL`.
