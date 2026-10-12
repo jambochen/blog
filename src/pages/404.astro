@@ -1,13 +1,186 @@
 ---
+import BaseHead from '../components/BaseHead.astro';
 import { SITE_TITLE } from '../consts';
 import { routes } from '../lib/siteRoutes';
-import Base from '../layouts/Base.astro';
 ---
 
-<Base title={`找不到頁面 | ${SITE_TITLE}`} description="這一頁不存在。">
-	<div class="wrap page">
-		<h1>找不到這一頁</h1>
-		<p>網址可能打錯了，或文章已經搬走。</p>
-		<p><a href={routes.home}>回首頁</a>　<a href={routes.posts}>看全部文章</a></p>
-	</div>
-</Base>
+<!doctype html>
+<html lang="zh-Hant" class="corridor">
+	<head>
+		<BaseHead title={`找不到頁面 | ${SITE_TITLE}`} description="這一頁不存在。" />
+	</head>
+	<body>
+		<canvas class="lines" aria-hidden="true"></canvas>
+		<main class="lost">
+			<h1>失去同步</h1>
+			<p><code class="path">這個網址</code> 不在這段記憶中。</p>
+			<a class="resync" href={routes.home}>重新同步</a>
+		</main>
+		<div class="white" aria-hidden="true"></div>
+	</body>
+</html>
+
+<style>
+	/* The corridor is the same light room in both themes, so nothing here follows the page colours. */
+	.corridor {
+		--room: #cdcbc7;
+		--room-ink: #2b2a28;
+		--alert: #b3272b;
+		color-scheme: light;
+		background:
+			radial-gradient(120% 70% at 50% 100%, rgb(255 255 255 / 0.55), transparent 70%),
+			linear-gradient(
+				90deg,
+				rgb(0 0 0 / 0.07),
+				transparent 12%,
+				rgb(0 0 0 / 0.09) 24%,
+				transparent 33%,
+				transparent 58%,
+				rgb(0 0 0 / 0.06) 71%,
+				transparent 84%,
+				rgb(0 0 0 / 0.08)
+			),
+			var(--room);
+		color: var(--room-ink);
+	}
+
+	body {
+		overflow: hidden;
+	}
+
+	.lines,
+	.white {
+		position: fixed;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+	}
+
+	.lines {
+		filter: blur(0.7px);
+	}
+
+	.lost {
+		position: fixed;
+		top: 44%;
+		left: var(--gutter);
+		right: var(--gutter);
+		flex: none;
+		transform: translateY(-50%);
+	}
+
+	h1 {
+		display: inline-block;
+		margin: 0 0 1rem;
+		padding: 0.15em 0.7em;
+		background: var(--alert);
+		color: #fff;
+		font-size: 1.25rem;
+		font-weight: 700;
+		line-height: 1.5;
+		letter-spacing: 0.12em;
+	}
+
+	p {
+		max-width: 30rem;
+		margin: 0 0 1.25rem;
+	}
+
+	.path {
+		font-size: 0.9em;
+		overflow-wrap: anywhere;
+	}
+
+	.resync {
+		color: inherit;
+		font-weight: 700;
+	}
+
+	.white {
+		background: #fff;
+		opacity: 0;
+		transition: opacity 0.4s ease-in;
+	}
+
+	.leaving .white {
+		opacity: 1;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		/* Held back until the rush of lines has slowed, so the label arrives in a room that is already still. */
+		.lost > * {
+			animation: appear 0.01s 0.9s backwards;
+		}
+	}
+
+	@keyframes appear {
+		from {
+			visibility: hidden;
+		}
+	}
+</style>
+
+<!-- The view-transition layers hang from the document, outside any element a scoped style can reach. -->
+<style is:global>
+	@media (prefers-reduced-motion: no-preference) {
+		/* A visitor who followed a link inside the site still has the last page on screen: it loses its colour and focus as the scene does in the game. `*` takes in the header and titles, which are layers of their own. */
+		::view-transition-old(*) {
+			animation: desync 0.9s ease-in both;
+			mix-blend-mode: normal;
+		}
+
+		/* Drawn over the last page with no blending, so the white lines cross it before it is gone. */
+		::view-transition-new(root) {
+			animation: enter-room 0.9s ease-out both;
+			mix-blend-mode: normal;
+		}
+	}
+
+	@keyframes desync {
+		40% {
+			filter: grayscale(1) blur(2px);
+			opacity: 0.85;
+		}
+		to {
+			filter: grayscale(1) blur(10px);
+			opacity: 0;
+			transform: scale(1.06);
+		}
+	}
+
+	@keyframes enter-room {
+		from {
+			opacity: 0;
+		}
+	}
+</style>
+
+<script>
+	import { startCorridor } from '../lib/memoryCorridor';
+	import { routes } from '../lib/siteRoutes';
+
+	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const canvas = document.querySelector<HTMLCanvasElement>('.lines');
+	const corridor = canvas && startCorridor(canvas, still);
+
+	const path = document.querySelector('.path');
+	if (path) {
+		try {
+			path.textContent = decodeURI(routes.withoutBase(location.pathname));
+		} catch {
+			// A path with a broken percent escape cannot be decoded; it is shown as typed.
+			path.textContent = routes.withoutBase(location.pathname);
+		}
+	}
+
+	const resync = document.querySelector<HTMLAnchorElement>('.resync');
+	resync?.addEventListener('click', (event) => {
+		if (still || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+		event.preventDefault();
+		corridor?.rush();
+		document.documentElement.classList.add('leaving');
+		// Matches the transition of `.white`.
+		setTimeout(() => location.assign(resync.href), 400);
+	});
+</script>
