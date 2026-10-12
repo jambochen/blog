@@ -11,7 +11,7 @@ export async function GET(context) {
 		site: new URL(withBase('/'), context.site),
 		items: posts.map((post) => ({
 			...post.data,
-			link: withBase(`/blog/${post.id}/`),
+			link: withBase(`/${post.id}/`),
 		})),
 	});
 }

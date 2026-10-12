@@ -37,6 +37,11 @@ export function seriesOf(post: Post): string | undefined {
 	return rest.length > 0 ? folder : undefined;
 }
 
+// Series and standalone posts are served from the site's root, beside these pages.
+const PAGES = Object.keys(import.meta.glob('../pages/*')).map((path) =>
+	path.replace('../pages/', '').replace(/\.[^.]+$/, ''),
+);
+
 const byPubDate = (a: Post, b: Post) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf();
 
 // Posts with an explicit `seriesOrder` come first, in that order; the rest follow by date.
@@ -68,7 +73,11 @@ export async function getEpisodes(): Promise<Episode[]> {
 		if (slug && !registry.has(slug)) {
 			throw new Error(`${post.filePath ?? post.id}: folder "${slug}" is not in src/content/series.json`);
 		}
-		// The post and the series page would both be served at `/blog/<id>/`.
+		const [name] = post.id.split('/');
+		if (name && PAGES.includes(name)) {
+			throw new Error(`${post.filePath ?? post.id}: "${name}" is already the page src/pages/${name}`);
+		}
+		// The post and the series page would both be served at `/<id>/`.
 		if (registry.has(post.id)) {
 			throw new Error(`${post.filePath ?? post.id}: a standalone post cannot share the name of series "${post.id}"`);
 		}

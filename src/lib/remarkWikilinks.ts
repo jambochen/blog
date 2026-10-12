@@ -118,7 +118,7 @@ function readPosts(isBuild: boolean, base: string): Post[] {
 			path,
 			title: String(frontmatter.title),
 			description: String(frontmatter.description ?? ''),
-			url: `${base}/blog/${id}/`,
+			url: `${base}/${id}/`,
 			draft: frontmatter.draft === true,
 			// The folder, as in `seriesOf`.
 			series: segments.length > 1 ? segments[0] : undefined,

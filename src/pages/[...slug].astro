@@ -1,7 +1,7 @@
 ---
 import { render } from 'astro:content';
-import BlogPost from '../../layouts/BlogPost.astro';
-import { type Episode, getEpisodes, neighbours } from '../../lib/posts';
+import BlogPost from '../layouts/BlogPost.astro';
+import { type Episode, getEpisodes, neighbours } from '../lib/posts';
 
 export async function getStaticPaths() {
 	const episodes = await getEpisodes();

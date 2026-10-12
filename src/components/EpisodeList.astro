@@ -15,7 +15,7 @@ const { episodes, showSeries = true } = Astro.props;
 	{
 		episodes.map(({ post, series }) => (
 			<li>
-				<a href={withBase(`/blog/${post.id}/`)}>
+				<a href={withBase(`/${post.id}/`)}>
 					<span class="text">
 						{series && (
 							<span class="series">

@@ -1,8 +1,8 @@
 ---
-import EpisodeList from '../../components/EpisodeList.astro';
-import { SITE_TITLE } from '../../consts';
-import Base from '../../layouts/Base.astro';
-import { getEpisodes, groupSeries, type Series } from '../../lib/posts';
+import EpisodeList from '../components/EpisodeList.astro';
+import { SITE_TITLE } from '../consts';
+import Base from '../layouts/Base.astro';
+import { getEpisodes, groupSeries, type Series } from '../lib/posts';
 
 export async function getStaticPaths() {
 	return groupSeries(await getEpisodes()).map((series) => ({

@@ -36,4 +36,4 @@ Write the heading without backticks. A link to a draft is plain text in a build.
 
 A series is a folder in `src/content/blog/`: every post in `blog/<key>/` belongs to it and `/blog/<key>/` is its page. A post directly in `blog/` is standalone. Do not add a `series` field to frontmatter; set only `seriesOrder` for the post's place.
 
-Each folder needs an entry under the same key in `src/content/series.json`, with the name, an optional description and the tone of its colour block. The build fails when a folder has no entry, an entry has no folder, or a standalone post is named like a series.
+Each folder needs an entry under the same key in `src/content/series.json`, with the name, an optional description and the tone of its colour block. The build fails when a folder has no entry, an entry has no folder, a standalone post is named like a series, or a series or standalone post is named like a page in `src/pages/`.

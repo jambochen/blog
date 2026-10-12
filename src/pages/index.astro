@@ -19,19 +19,19 @@ const standalone = episodes.filter((episode) => !episode.series).reverse();
 
 		{
 			allSeries.map((series) => (
-				<Shelf name={series.name} href={withBase(`/blog/${series.slug}/`)} episodes={series.episodes} tone={series.tone} />
+				<Shelf name={series.name} href={withBase(`/${series.slug}/`)} episodes={series.episodes} tone={series.tone} />
 			))
 		}
 
 		{
 			standalone.length > 0 && (
-				<Shelf name="單篇文章" href={withBase('/blog')} episodes={standalone.slice(0, STANDALONE_COUNT)} />
+				<Shelf name="單篇文章" href={withBase('/posts')} episodes={standalone.slice(0, STANDALONE_COUNT)} />
 			)
 		}
 		{
 			standalone.length > STANDALONE_COUNT && (
 				<p class="all">
-					<a href={withBase('/blog')}>看全部 {episodes.length} 篇文章</a>
+					<a href={withBase('/posts')}>看全部 {episodes.length} 篇文章</a>
 				</p>
 			)
 		}
