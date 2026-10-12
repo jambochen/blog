@@ -3,5 +3,10 @@
 		"name": "從網頁對話到 coding agent",
 		"description": "寫給以 R 或 Python 做資料分析與科學計算的學生與研究者：從網頁對話換到 coding agent 所需的環境設定與 CS 背景。",
 		"tone": "page"
+	},
+	"jetson-edge-ai": {
+		"name": "NVIDIA邊緣運算探索：解鎖AI視覺與大模型的無限潛能",
+		"description": "2024 iThome 鐵人賽的參賽系列：以 NVIDIA Jetson 開發套件實作邊緣 AI，從選擇設備、刷機，到 Jetson AI Lab、NanoLLM 與 DeepStream。",
+		"tone": "page"
 	}
 }
