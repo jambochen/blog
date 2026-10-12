@@ -180,6 +180,11 @@ kbd {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+	/* Both the page left and the page entered must carry this for the browser to animate between them. */
+	@view-transition {
+		navigation: auto;
+	}
+
 	.prose :is(h2, h3, h4):target {
 		animation: arrive 1.8s ease-out;
 	}

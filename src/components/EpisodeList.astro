@@ -1,6 +1,7 @@
 ---
 import { type Episode, seriesPositionLabel } from '../lib/posts';
 import { routes } from '../lib/siteRoutes';
+import { transitionNames } from '../lib/transitionNames';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
@@ -22,7 +23,9 @@ const { episodes, showSeries = true } = Astro.props;
 								{showSeries ? `${series.name}　${seriesPositionLabel(series)}` : `第 ${series.number} 篇`}
 							</span>
 						)}
-						<span class="title">{post.data.title}</span>
+						<span class="title" style={{ viewTransitionName: transitionNames.post(post.id) }}>
+							{post.data.title}
+						</span>
 						<span class="description">{post.data.description}</span>
 					</span>
 					<FormattedDate date={post.data.pubDate} />

@@ -1,6 +1,7 @@
 ---
 import type { Episode, Tone } from '../lib/posts';
 import { routes } from '../lib/siteRoutes';
+import { transitionNames } from '../lib/transitionNames';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
@@ -8,14 +9,15 @@ interface Props {
 	href: string;
 	episodes: Episode[];
 	tone?: Tone;
+	transitionName?: string;
 }
 
-const { name, href, episodes, tone } = Astro.props;
+const { name, href, episodes, tone, transitionName } = Astro.props;
 ---
 
 <section class="shelf" data-tone={tone}>
 	<h2>
-		<a href={href}>{name}</a>
+		<a href={href} style={transitionName && { viewTransitionName: transitionName }}>{name}</a>
 		<span class="count">共 {episodes.length} 篇</span>
 	</h2>
 	<ol>
@@ -28,7 +30,9 @@ const { name, href, episodes, tone } = Astro.props;
 						) : (
 							<FormattedDate date={post.data.pubDate} />
 						)}
-						<span class="title">{post.data.title}</span>
+						<span class="title" style={{ viewTransitionName: transitionNames.post(post.id) }}>
+							{post.data.title}
+						</span>
 						<span class="description">{post.data.description}</span>
 					</a>
 				</li>
