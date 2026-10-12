@@ -7,10 +7,10 @@ seriesOrder: 8
 
 import Diagram from '../../../components/Diagram.astro';
 import GrowingVector from '../../../components/GrowingVector.astro';
+import ParallelRace from '../../../components/ParallelRace.astro';
 import SpeedupLimit from '../../../components/SpeedupLimit.astro';
 import loopVsVectorized from './img/loop-vs-vectorized.svg?raw';
 import growingVectorTiming from './img/growing-vector-timing.svg?raw';
-import sequentialVsParallel from './img/sequential-vs-parallel.html?raw';
 import seedStreams from './img/seed-streams.html?raw';
 import summationOrder from './img/summation-order.html?raw';
 
@@ -151,7 +151,9 @@ Windows 上的查看方式是按 Ctrl+Shift+Esc 開啟工作管理員，切到�
 
 電腦上每一個執行中的軟體稱為行程（process）。平行運算時派出去計算的每一個單位稱為 worker，也就是上述比喻裡的助教，通常是另外啟動的幾個 R 或 Python 行程，各自獨立計算，算完把結果交回原本的那一個，後者稱為主行程。worker 的數量一般不超過實體核心數，並且留一個核心給系統與其他軟體，否則計算期間電腦會慢得無法做別的事。
 
-<Diagram source={sequentialVsParallel} alt="循序與平行之別：循序時八次計算由一個核心依序完成，其餘核心閒置；平行時主行程把八次計算分給四個 worker 同時進行，再彙整結果，完成的時間提前" />
+下圖以二十四個檔案各算一次摘要為例，按下 Run 之後，上方由主行程依序處理，下方先啟動四個 worker，再同時處理各自的六個檔案，最後由主行程彙整；把 Files 切換成 4 再執行一次，循序反而先完成，原因見[[#不值得平行化的情況]]。
+
+<ParallelRace />
 
 ### 可平行化的工作
 
