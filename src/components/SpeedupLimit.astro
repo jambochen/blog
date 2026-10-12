@@ -198,7 +198,7 @@ const ticks = [0, 2, 4, 6, 8, 10];
 			}
 		};
 
-		figure.addEventListener('input', () => {
+		const update = () => {
 			const serial = Number(input('serial').value);
 			const workers = Number(input('workers').value);
 			const view = speedupLimit(serial, workers);
@@ -213,6 +213,10 @@ const ticks = [0, 2, 4, 6, 8, 10];
 			label('shared', view.bars.shared);
 			output('speedup').textContent = view.speedup;
 			output('limit').textContent = view.limit;
-		});
+		};
+
+		figure.addEventListener('input', update);
+		// A reload can put the sliders back where the reader left them, away from the values the markup was painted with.
+		update();
 	}
 </script>

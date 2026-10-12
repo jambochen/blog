@@ -1,6 +1,6 @@
 // Every list of posts the site shows is derived here, from records an adapter
-// hands over: `siteCatalogue.ts` for the pages and `remarkWikilinks.ts` for the
-// Markdown plugin. Imports nothing from Astro, so both of them and the tests can load it.
+// hands over. Imports nothing from Astro, so it also loads in the Markdown
+// plugin and the tests, where `astro:content` does not exist.
 import type { SeriesDetails } from './contentSchema.ts';
 import { isVisible, type Placement, type PostRecord, placeEpisodes } from './series.ts';
 

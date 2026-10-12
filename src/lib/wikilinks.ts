@@ -92,8 +92,14 @@ export function wikilinkSite(content: Content, routes: Routes, showDrafts: boole
 	);
 }
 
+interface Linker {
+	link(tree: Root, path: string | undefined): void;
+	// One line for each pair of posts with the same title. A wikilink to that title opens the first of them.
+	repeatedTitles: string[];
+}
+
 // Reads every post once, so the links of many posts can be made from one reading.
-function linker(site: Catalogue<PostSource>): (tree: Root, path: string | undefined) => void {
+function linker(site: Catalogue<PostSource>): Linker {
 	const target = (post: PostSource, rest: Partial<Target>): Target => ({
 		...post,
 		hidden: false,
@@ -110,12 +116,13 @@ function linker(site: Catalogue<PostSource>): (tree: Root, path: string | undefi
 	].sort((a, b) => (a.path < b.path ? -1 : 1));
 
 	const byTitle = new Map<string, Target>();
+	const repeatedTitles: string[] = [];
 	for (const post of posts) {
 		const other = byTitle.get(post.title);
-		if (other) throw new Error(`"${post.title}" is the title of both ${other.path} and ${post.path}`);
-		byTitle.set(post.title, post);
+		if (other) repeatedTitles.push(`"${post.title}" is the title of both ${other.path} and ${post.path}`);
+		else byTitle.set(post.title, post);
 	}
-	return (tree, path) => {
+	const link: Linker['link'] = (tree, path) => {
 		const self = posts.find((post) => post.path === path);
 
 		// An episode number means little without its series, so the series is
@@ -160,6 +167,7 @@ function linker(site: Catalogue<PostSource>): (tree: Root, path: string | undefi
 		if (value.includes('[[')) throw new Error(`"${value}" holds an incomplete reference`);
 	});
 	};
+	return { link, repeatedTitles };
 }
 
 // Turns `[[篇名]]`, `[[#標題]]` and `[[篇名#標題]]` in the post at `path` into
@@ -167,18 +175,16 @@ function linker(site: Catalogue<PostSource>): (tree: Root, path: string | undefi
 // instead of the default. Throws at a reference that matches nothing, so a
 // renamed title or heading cannot leave a dead link behind.
 export function linkWikilinks(tree: Root, path: string | undefined, site: Catalogue<PostSource>): void {
-	linker(site)(tree, path);
+	const { link, repeatedTitles } = linker(site);
+	if (repeatedTitles.length) throw new Error(repeatedTitles.join('\n'));
+	link(tree, path);
 }
 
-// One line a problem, each naming the file to fix; at most one for a file.
+// One line a problem, each naming the file to fix. A file's first broken
+// wikilink stands for the rest of them, since the linking stops there.
 export function wikilinkProblems(site: Catalogue<PostSource>): string[] {
-	let link: ReturnType<typeof linker>;
-	try {
-		link = linker(site);
-	} catch (error) {
-		return [error instanceof Error ? error.message : String(error)];
-	}
-	const problems: string[] = [];
+	const { link, repeatedTitles } = linker(site);
+	const problems = [...repeatedTitles];
 	const posts = [...site.posts.map(({ post }) => post), ...site.drafts];
 	for (const post of posts.sort((a, b) => (a.path < b.path ? -1 : 1))) {
 		try {

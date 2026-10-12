@@ -45,6 +45,14 @@ describe('contentProblems', () => {
 		expect(contentProblems(content(posts), false)).toEqual(['"Same" is the title of both blog/a.md and blog/b.md']);
 	});
 
+	it('lists the broken wikilinks beside a repeated title', () => {
+		const posts = [post('a', 'Same'), post('b', 'Same'), post('c', 'C', '[[Nowhere]]')];
+		expect(contentProblems(content(posts), false)).toEqual([
+			'"Same" is the title of both blog/a.md and blog/b.md',
+			'blog/c.md: [[Nowhere]] names no post',
+		]);
+	});
+
 	it('checks the wikilinks of a hidden draft too', () => {
 		const posts = [post('a', 'A', '[[Nowhere]]', { draft: true })];
 		expect(contentProblems(content(posts), false)).toEqual(['blog/a.md: [[Nowhere]] names no post']);

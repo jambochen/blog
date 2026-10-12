@@ -78,8 +78,9 @@ const bars = [
 	.race {
 		--done: color-mix(in srgb, var(--ink) 16%, transparent);
 	}
-	/* Wider than between the choices, so Run reads apart from them. */
-	.actions {
+	/* Wider than between the choices, so Run reads apart from them. Named from the root to outweigh the
+	   frame's own gap, which is otherwise as strong and wins or loses by the order of the stylesheets. */
+	.race .actions {
 		column-gap: 1.5rem;
 	}
 	.counts {
@@ -193,7 +194,7 @@ const bars = [
 	const UNIT_MS = 300;
 
 	for (const figure of document.querySelectorAll<HTMLElement>('.race')) {
-		// The `!` here and below are safe: the markup above holds each of these elements.
+		// The `!` is safe: the markup above ends with this element.
 		const speedup = figure.querySelector<HTMLElement>('[data-out="speedup"]')!;
 		const countButtons = [...figure.querySelectorAll<HTMLButtonElement>('[data-count]')];
 		let files = Math.max(...FILE_COUNTS);
@@ -203,6 +204,7 @@ const bars = [
 			parallel: lane.dataset.mode === 'parallel',
 			cells: [...lane.querySelectorAll<HTMLElement>('.cell')],
 			cores: [...lane.querySelectorAll<HTMLElement>('.core')],
+			// The `!` are safe: every lane in the markup holds each bar and output asked for below.
 			bar: (name: string) => lane.querySelector<HTMLElement>(`[data-bar="${name}"]`)!,
 			out: (name: string) => lane.querySelector<HTMLElement>(`[data-out="${name}"]`)!,
 		}));
