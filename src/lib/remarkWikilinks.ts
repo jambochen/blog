@@ -2,19 +2,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseFrontmatter } from '@astrojs/markdown-remark';
 import GithubSlugger, { slug as slugify } from 'github-slugger';
+import type { Link, Nodes, Root } from 'mdast';
+import { findAndReplace } from 'mdast-util-find-and-replace';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import remarkMdx from 'remark-mdx';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-
-interface MdastNode {
-	type: string;
-	value?: string;
-	url?: string;
-	children?: MdastNode[];
-	data?: Record<string, unknown>;
-}
+import { visit } from 'unist-util-visit';
 
 interface Section {
 	text: string;
@@ -45,16 +40,17 @@ const mdx = markdown().use(remarkMdx);
 
 // A node's text without its markup. Raw HTML tags and images add nothing, as on
 // the rendered page; `formulas` keeps the LaTeX source, which the page's ids drop.
-function textOf(node: MdastNode, formulas: boolean): string {
+function textOf(node: Nodes, formulas: boolean): string {
 	if (node.type === 'inlineMath') return formulas ? `$${node.value}$` : '';
 	if (node.type === 'html' || node.type === 'image') return '';
-	return node.children?.map((child) => textOf(child, formulas)).join('') ?? node.value ?? '';
+	if ('children' in node) return node.children.map((child) => textOf(child, formulas)).join('');
+	return 'value' in node ? node.value : '';
 }
 
 // Figures, tables, quotes and display math do not read as a summary, so only a
 // paragraph or the first item of a list gives one.
-function excerptOf(node: MdastNode): string {
-	const lead = node.type === 'list' ? node.children?.[0]?.children?.[0] : node;
+function excerptOf(node: Nodes): string {
+	const lead = node.type === 'list' ? node.children[0]?.children[0] : node;
 	if (lead?.type !== 'paragraph') return '';
 	const prose = textOf(lead, true)
 		.replace(/\[\[(?:[^[\]|]*\|)?([^[\]|]*)\]\]/g, (_, shown: string) => shown.replace(/^.*#/, ''))
@@ -87,8 +83,9 @@ export function wikilinkCheck() {
 function sectionsOf(body: string, extension: string): Section[] {
 	const slugger = new GithubSlugger();
 	const sections: Section[] = [];
-	const visit = (parent: MdastNode, nested: boolean) => {
-		for (const node of parent.children ?? []) {
+	const collect = (parent: Nodes, nested: boolean) => {
+		if (!('children' in parent)) return;
+		for (const node of parent.children) {
 			if (node.type === 'heading') {
 				sections.push({ text: textOf(node, true), slug: slugger.slug(textOf(node, false)), excerpt: '' });
 				continue;
@@ -96,10 +93,10 @@ function sectionsOf(body: string, extension: string): Section[] {
 			const section = sections.at(-1);
 			if (section && !section.excerpt && !nested) section.excerpt = excerptOf(node);
 			// Astro numbers the headings inside quotes and components along with the rest.
-			visit(node, true);
+			collect(node, true);
 		}
 	};
-	visit((extension === '.mdx' ? mdx : markdown).parse(body) as MdastNode, false);
+	collect((extension === '.mdx' ? mdx : markdown).parse(body), false);
 	return sections;
 }
 
@@ -160,7 +157,7 @@ function readPosts(isBuild: boolean, base: string): Post[] {
 // reference that matches nothing fails the build, so a renamed title or heading
 // cannot leave a dead link behind.
 export function remarkWikilinks({ base = '' }: { base?: string } = {}) {
-	return (tree: MdastNode, file: { path?: string }) => {
+	return (tree: Root, file: { path?: string }) => {
 		// Matches `getPosts`: a build leaves drafts out, so a link to one would be dead.
 		const isBuild = process.env.NODE_ENV === 'production';
 		const fail = (reason: string) => {
@@ -191,24 +188,19 @@ export function remarkWikilinks({ base = '' }: { base?: string } = {}) {
 			return `${names[post.series ?? '']?.name ?? post.series} · ${position}`;
 		};
 
-		const linkFor = (match: RegExpExecArray): MdastNode => {
-			const [source, title = '', heading, label] = match;
-
+		const linkFor = (source: string, title = '', heading?: string, label?: string): Link | string => {
 			const post = title.trim() ? byTitle.get(title.trim()) : self;
 			if (!post) throw fail(`${source} names no post`);
 			if (!title.trim() && !heading) throw fail(`${source} names neither a post nor a section`);
 			const section = heading && post.sections.find(({ text }) => text === heading.trim());
 			if (heading && !section) throw fail(`${source} names no section of ${post.path}`);
 
-			const text: MdastNode = {
-				type: 'text',
-				value: label ?? (section ? `「${section.text}」` : post.title),
-			};
+			const text = label ?? (section ? `「${section.text}」` : post.title);
 			if (post.draft && isBuild) return text;
 			return {
 				type: 'link',
 				url: (post === self && section ? '' : post.url) + (section ? `#${section.slug}` : ''),
-				children: [text],
+				children: [{ type: 'text', value: text }],
 				data: {
 					hProperties: {
 						className: ['xref'],
@@ -221,31 +213,11 @@ export function remarkWikilinks({ base = '' }: { base?: string } = {}) {
 			};
 		};
 
-		const split = (node: MdastNode): MdastNode[] => {
-			const value = node.value ?? '';
-			const parts: MdastNode[] = [];
-			let end = 0;
-			for (const match of value.matchAll(WIKILINK)) {
-				if (match.index > end) parts.push({ type: 'text', value: value.slice(end, match.index) });
-				parts.push(linkFor(match));
-				end = match.index + match[0].length;
-			}
-			if (end < value.length) parts.push({ type: 'text', value: value.slice(end) });
-			// A reference broken up by inline code or a formula never matches the
-			// pattern, and would otherwise reach the page as literal brackets.
-			const stray = parts.find((part) => part.type === 'text' && part.value?.includes('[['));
-			if (stray) throw fail(`"${stray.value}" holds an incomplete reference`);
-			return parts;
-		};
-
-		const visit = (node: MdastNode) => {
-			if (!node.children) return;
-			node.children = node.children.flatMap((child) => {
-				if (child.type === 'text' && child.value?.includes('[[')) return split(child);
-				visit(child);
-				return [child];
-			});
-		};
-		visit(tree);
+		findAndReplace(tree, [WIKILINK, linkFor]);
+		// A reference broken up by inline code or a formula never matches the
+		// pattern, and would otherwise reach the page as literal brackets.
+		visit(tree, 'text', ({ value }) => {
+			if (value.includes('[[')) throw fail(`"${value}" holds an incomplete reference`);
+		});
 	};
 }

@@ -1,8 +1,5 @@
-interface MdastNode {
-	type: string;
-	value?: string;
-	children?: MdastNode[];
-}
+import type { Nodes, Root } from 'mdast';
+import { visit } from 'unist-util-visit';
 
 interface AstroVFile {
 	data: { astro?: { frontmatter?: Record<string, unknown> } };
@@ -12,18 +9,17 @@ interface AstroVFile {
 // heading the math has become SVG. This records each heading's text with the
 // LaTeX source kept, in document order, so the outline can show it.
 export function remarkHeadingText() {
-	const textOf = (node: MdastNode): string => {
+	const textOf = (node: Nodes): string => {
 		if (node.type === 'inlineMath') return `$${node.value}$`;
-		return node.value ?? node.children?.map(textOf).join('') ?? '';
+		if ('children' in node) return node.children.map(textOf).join('');
+		return 'value' in node ? node.value : '';
 	};
 
-	return (tree: MdastNode, file: AstroVFile) => {
+	return (tree: Root, file: AstroVFile) => {
 		const texts: string[] = [];
-		const visit = (node: MdastNode) => {
-			if (node.type === 'heading') texts.push(textOf(node));
-			else node.children?.forEach(visit);
-		};
-		visit(tree);
+		visit(tree, 'heading', (node) => {
+			texts.push(textOf(node));
+		});
 
 		const frontmatter = file.data.astro?.frontmatter;
 		if (frontmatter) frontmatter.headingTexts = texts;
