@@ -35,7 +35,7 @@ import Base from '../layouts/Base.astro';
 	if (input && status && list) {
 		let pagefind: Pagefind | undefined;
 		const load = async () => {
-			// The index is written into the built site by the `build` script, so this path does not exist for the bundler to resolve.
+			// The index is written into the built site when a build ends, so this path does not exist for the bundler to resolve.
 			const path = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/pagefind/pagefind.js`;
 			if (!pagefind) {
 				pagefind = (await import(/* @vite-ignore */ path)) as Pagefind;
@@ -57,7 +57,8 @@ import Base from '../layouts/Base.astro';
 			try {
 				found = await (await load())!.debouncedSearch(query);
 			} catch {
-				status.textContent = '搜尋索引只在建置後的網站裡，開發伺服器沒有。';
+				// The dev server serves the index of the last build, so there is none before the first.
+				status.textContent = '找不到搜尋索引，請先建置一次。';
 				return;
 			}
 			// Null means a newer keystroke replaced this search.

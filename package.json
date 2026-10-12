@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && pagefind --site dist",
+    "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -20,6 +20,7 @@
     "astro": "^7.3.8",
     "astro-expressive-code": "^0.44.2",
     "astro-icon": "^1.2.0",
+    "astro-pagefind": "^2.0.1",
     "github-slugger": "^2.0.0",
     "mdast-util-find-and-replace": "^3.0.3",
     "mermaid": "^12.1.0",
@@ -33,7 +34,6 @@
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {
-    "@types/mdast": "^4.0.4",
-    "pagefind": "^1.5.2"
+    "@types/mdast": "^4.0.4"
   }
 }
