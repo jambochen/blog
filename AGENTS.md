@@ -8,6 +8,8 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+After a change to the layout, or a new figure, table or code block, open the page at a width of 375px. Nothing may make the page scroll sideways, and text must keep enough contrast in light and dark.
+
 ## Documentation
 
 Full documentation: https://docs.astro.build
@@ -20,6 +22,12 @@ Consult these guides before working on related tasks:
 - [Adding or managing content](https://docs.astro.build/en/guides/content-collections/)
 - [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
 - [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
+
+## Writing posts
+
+Before writing or changing the text or a heading of a post, read `docs/style.md`. The terms for the text are in the section 「文章用語」 of `GLOSSARY.md`. Run `scripts/check-wording.sh` after a change to a post in `coding-agent/`; it lists each word to replace.
+
+Show a rewrite of post text to Jambo before writing it into the post.
 
 ## Linking between posts
 
