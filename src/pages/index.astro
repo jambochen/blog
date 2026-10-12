@@ -4,6 +4,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
 import { getEpisodes, groupSeries } from '../lib/posts';
 import { routes } from '../lib/siteRoutes';
+import { transitionNames } from '../lib/transitionNames';
 
 const STANDALONE_COUNT = 8;
 
@@ -19,7 +20,13 @@ const standalone = episodes.filter((episode) => !episode.series).reverse();
 
 		{
 			allSeries.map((series) => (
-				<Shelf name={series.name} href={routes.series(series.slug)} episodes={series.episodes} tone={series.tone} />
+				<Shelf
+					name={series.name}
+					href={routes.series(series.slug)}
+					episodes={series.episodes}
+					tone={series.tone}
+					transitionName={transitionNames.series(series.slug)}
+				/>
 			))
 		}
 

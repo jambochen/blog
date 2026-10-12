@@ -33,6 +33,8 @@ import HeaderLink from './HeaderLink.astro';
 
 <style>
 	.site-header {
+		/* Its own layer in a page change, so the bar holds still while the page under it fades. */
+		view-transition-name: site-header;
 		border-bottom: 1px solid var(--bar-ink);
 		color: var(--bar-ink);
 		font-family: var(--font-mincho);

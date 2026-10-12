@@ -8,6 +8,7 @@ import XrefPreview from '../components/XrefPreview.astro';
 import { SITE_TITLE } from '../consts';
 import type { Episode } from '../lib/posts';
 import { routes } from '../lib/siteRoutes';
+import { transitionNames } from '../lib/transitionNames';
 import Base from './Base.astro';
 
 interface Props {
@@ -43,7 +44,9 @@ const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter 
 				{next && (
 					<a class="turn-row" href={routes.post(next.post.id)}>
 						{continues ? <ToBeContinued label="下一篇" /> : <span class="turn-label">下一篇</span>}
-						<span class="turn-title">{next.post.data.title}</span>
+						<span class="turn-title" style={{ viewTransitionName: transitionNames.post(next.post.id) }}>
+							{next.post.data.title}
+						</span>
 					</a>
 				)}
 				{unpublishedAfter > 0 && (
@@ -55,7 +58,9 @@ const continues = Boolean(episode.series) && (Boolean(next) || unpublishedAfter 
 				{previous && (
 					<a class="turn-row" href={routes.post(previous.post.id)}>
 						<span class="turn-label">上一篇</span>
-						<span class="turn-title">{previous.post.data.title}</span>
+						<span class="turn-title" style={{ viewTransitionName: transitionNames.post(previous.post.id) }}>
+							{previous.post.data.title}
+						</span>
 					</a>
 				)}
 			</nav>
