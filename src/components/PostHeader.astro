@@ -1,6 +1,6 @@
 ---
-import { withBase } from '../lib/paths';
 import { type Episode, seriesPositionLabel } from '../lib/posts';
+import { routes } from '../lib/siteRoutes';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
@@ -19,7 +19,7 @@ const { title, description, pubDate, updatedDate, tags } = episode.post.data;
 		{
 			series && (
 				<p class="series">
-					<a href={withBase(`/${series.slug}/`)}>{series.name}</a>
+					<a href={routes.series(series.slug)}>{series.name}</a>
 					<span>{seriesPositionLabel(series)}</span>
 				</p>
 			)

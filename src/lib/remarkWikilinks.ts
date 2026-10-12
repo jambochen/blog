@@ -10,6 +10,7 @@ import remarkMdx from 'remark-mdx';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
+import { routesFor } from './routes.ts';
 import { isVisible, type PostRecord, placeEpisodes, seriesOf } from './series.ts';
 
 interface Section {
@@ -101,6 +102,7 @@ function sectionsOf(body: string, extension: string): Section[] {
 // Read on every call rather than once: in `astro dev` a renamed title or
 // heading has to reach the posts that refer to it without a restart.
 function readPosts(showDrafts: boolean, base: string): Post[] {
+	const routes = routesFor(base);
 	const posts: Post[] = [];
 	for (const entry of readdirSync(CONTENT_DIR, { recursive: true, encoding: 'utf8' })) {
 		const extension = /\.mdx?$/.exec(entry)?.[0];
@@ -117,7 +119,7 @@ function readPosts(showDrafts: boolean, base: string): Post[] {
 			path,
 			title: String(frontmatter.title),
 			description: String(frontmatter.description ?? ''),
-			url: `${base}/${id}/`,
+			url: routes.post(id),
 			draft: frontmatter.draft === true,
 			series: seriesOf(id),
 			seriesOrder: frontmatter.seriesOrder,

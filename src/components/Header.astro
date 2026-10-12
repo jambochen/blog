@@ -1,16 +1,16 @@
 ---
 import { SITE_TITLE } from '../consts';
-import { withBase } from '../lib/paths';
+import { routes } from '../lib/siteRoutes';
 import HeaderLink from './HeaderLink.astro';
 ---
 
 <header class="site-header">
 	<nav class="wrap" aria-label="主選單">
-		<a class="site-name" href={withBase('/')}>{SITE_TITLE}</a>
+		<a class="site-name" href={routes.home}>{SITE_TITLE}</a>
 		<div class="links">
-			<HeaderLink href="/posts">文章</HeaderLink>
-			<HeaderLink href="/about">關於</HeaderLink>
-			<HeaderLink href="/search">搜尋</HeaderLink>
+			<HeaderLink href={routes.posts}>文章</HeaderLink>
+			<HeaderLink href={routes.about}>關於</HeaderLink>
+			<HeaderLink href={routes.search}>搜尋</HeaderLink>
 			<button type="button" id="theme-toggle">切到深色</button>
 		</div>
 	</nav>

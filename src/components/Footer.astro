@@ -1,7 +1,7 @@
 ---
 import { Icon } from 'astro-icon/components';
 import { GITHUB_URL, SITE_TITLE } from '../consts';
-import { withBase } from '../lib/paths';
+import { routes } from '../lib/siteRoutes';
 
 const today = new Date();
 ---
@@ -11,7 +11,7 @@ const today = new Date();
 		<span>&copy; {today.getFullYear()} {SITE_TITLE}</span>
 		<span class="links">
 			<a href={GITHUB_URL} rel="me" aria-label="GitHub" title="GitHub"><Icon name="mdi:github" /></a>
-			<a href={withBase('/rss.xml')} aria-label="RSS 訂閱" title="RSS 訂閱"><Icon name="mdi:rss" /></a>
+			<a href={routes.rss} aria-label="RSS 訂閱" title="RSS 訂閱"><Icon name="mdi:rss" /></a>
 		</span>
 	</div>
 </footer>

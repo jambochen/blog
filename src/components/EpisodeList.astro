@@ -1,6 +1,6 @@
 ---
-import { withBase } from '../lib/paths';
 import { type Episode, seriesPositionLabel } from '../lib/posts';
+import { routes } from '../lib/siteRoutes';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
@@ -15,7 +15,7 @@ const { episodes, showSeries = true } = Astro.props;
 	{
 		episodes.map(({ post, series }) => (
 			<li>
-				<a href={withBase(`/${post.id}/`)}>
+				<a href={routes.post(post.id)}>
 					<span class="text">
 						{series && (
 							<span class="series">

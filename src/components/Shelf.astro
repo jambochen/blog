@@ -1,6 +1,6 @@
 ---
-import { withBase } from '../lib/paths';
 import type { Episode, Tone } from '../lib/posts';
+import { routes } from '../lib/siteRoutes';
 import FormattedDate from './FormattedDate.astro';
 
 interface Props {
@@ -22,7 +22,7 @@ const { name, href, episodes, tone } = Astro.props;
 		{
 			episodes.map(({ post, series }) => (
 				<li>
-					<a href={withBase(`/${post.id}/`)}>
+					<a href={routes.post(post.id)}>
 						{series ? (
 							<span class="number">{String(series.number).padStart(2, '0')}</span>
 						) : (
