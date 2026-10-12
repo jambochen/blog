@@ -67,6 +67,8 @@ export default defineConfig({
 		wikilinkCheck(),
 		pagefind(),
 	],
+	// Each image is built in several widths, so a phone does not download a desktop screenshot.
+	image: { layout: 'constrained', responsiveStyles: true },
 	markdown: {
 		processor: unified({
 			remarkPlugins: [remarkMath, remarkMermaid, remarkHeadingText, [remarkWikilinks, { base: BASE }]],
