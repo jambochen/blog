@@ -10,6 +10,7 @@ import remarkMdx from 'remark-mdx';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
+import { isVisible, type PostRecord, placeEpisodes, seriesOf } from './series.ts';
 
 interface Section {
 	text: string;
@@ -17,15 +18,12 @@ interface Section {
 	excerpt: string;
 }
 
-interface Post {
+interface Post extends PostRecord {
 	path: string;
 	title: string;
 	description: string;
 	url: string;
-	draft: boolean;
 	series?: string;
-	seriesOrder?: number;
-	pubDate: number;
 	// Position in its series, counted over the posts a reader can open.
 	episode?: number;
 	sections: Section[];
@@ -102,7 +100,7 @@ function sectionsOf(body: string, extension: string): Section[] {
 
 // Read on every call rather than once: in `astro dev` a renamed title or
 // heading has to reach the posts that refer to it without a restart.
-function readPosts(isBuild: boolean, base: string): Post[] {
+function readPosts(showDrafts: boolean, base: string): Post[] {
 	const posts: Post[] = [];
 	for (const entry of readdirSync(CONTENT_DIR, { recursive: true, encoding: 'utf8' })) {
 		const extension = /\.mdx?$/.exec(entry)?.[0];
@@ -115,40 +113,21 @@ function readPosts(isBuild: boolean, base: string): Post[] {
 			.map((segment) => slugify(segment));
 		const id = frontmatter.slug ?? segments.join('/');
 		posts.push({
+			id,
 			path,
 			title: String(frontmatter.title),
 			description: String(frontmatter.description ?? ''),
 			url: `${base}/${id}/`,
 			draft: frontmatter.draft === true,
-			// The folder, as in `seriesOf`.
-			series: segments.length > 1 ? segments[0] : undefined,
+			series: seriesOf(id),
 			seriesOrder: frontmatter.seriesOrder,
 			pubDate: new Date(frontmatter.pubDate).valueOf(),
 			sections: sectionsOf(content, extension),
 		});
 	}
 
-	// Has to number episodes the way `getEpisodes` does, or the number beside a
-	// link would disagree with the one on the page it opens.
-	const series = new Map<string, Post[]>();
-	for (const post of posts) {
-		if (!post.series || (isBuild && post.draft)) continue;
-		series.set(post.series, [...(series.get(post.series) ?? []), post]);
-	}
-	for (const members of series.values()) {
-		members
-			.sort((a, b) => {
-				if (a.seriesOrder !== undefined && b.seriesOrder !== undefined) {
-					return a.seriesOrder - b.seriesOrder;
-				}
-				if (a.seriesOrder !== undefined) return -1;
-				if (b.seriesOrder !== undefined) return 1;
-				return a.pubDate - b.pubDate;
-			})
-			.forEach((post, index) => {
-				post.episode = index + 1;
-			});
-	}
+	const placements = placeEpisodes(posts, showDrafts);
+	for (const post of posts) post.episode = placements.get(post.id)?.number;
 	return posts;
 }
 
@@ -158,15 +137,15 @@ function readPosts(isBuild: boolean, base: string): Post[] {
 // cannot leave a dead link behind.
 export function remarkWikilinks({ base = '' }: { base?: string } = {}) {
 	return (tree: Root, file: { path?: string }) => {
-		// Matches `getPosts`: a build leaves drafts out, so a link to one would be dead.
-		const isBuild = process.env.NODE_ENV === 'production';
+		// The plugin runs outside Vite, where `import.meta.env.DEV` does not exist.
+		const showDrafts = process.env.NODE_ENV !== 'production';
 		const fail = (reason: string) => {
 			const message = `${file.path}: ${reason}`;
 			failures.push(message);
 			return new Error(message);
 		};
 
-		const posts = readPosts(isBuild, base);
+		const posts = readPosts(showDrafts, base);
 		const byTitle = new Map<string, Post>();
 		for (const post of posts) {
 			const other = byTitle.get(post.title);
@@ -196,7 +175,8 @@ export function remarkWikilinks({ base = '' }: { base?: string } = {}) {
 			if (heading && !section) throw fail(`${source} names no section of ${post.path}`);
 
 			const text = label ?? (section ? `「${section.text}」` : post.title);
-			if (post.draft && isBuild) return text;
+			// The page of a hidden draft is not built, so a link to it would be dead.
+			if (!isVisible(post, showDrafts)) return text;
 			return {
 				type: 'link',
 				url: (post === self && section ? '' : post.url) + (section ? `#${section.slug}` : ''),

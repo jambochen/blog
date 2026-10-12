@@ -1,4 +1,5 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
+import { isVisible, placeEpisodes, seriesOf } from './series.ts';
 
 type Post = CollectionEntry<'blog'>;
 
@@ -29,14 +30,6 @@ export interface Series {
 	episodes: Episode[];
 }
 
-// A post in a folder of `src/content/blog/` belongs to the series that folder
-// is named after; a post directly in it is standalone. The folder is already
-// the first part of the post's URL, so the series page sits one level above.
-export function seriesOf(post: Post): string | undefined {
-	const [folder, ...rest] = post.id.split('/');
-	return rest.length > 0 ? folder : undefined;
-}
-
 // Series and standalone posts are served from the site's root, beside these pages.
 const PAGES = Object.keys(import.meta.glob('../pages/*')).map((path) =>
 	path.replace('../pages/', '').replace(/\.[^.]+$/, ''),
@@ -44,32 +37,20 @@ const PAGES = Object.keys(import.meta.glob('../pages/*')).map((path) =>
 
 const byPubDate = (a: Post, b: Post) => a.data.pubDate.valueOf() - b.data.pubDate.valueOf();
 
-// Posts with an explicit `seriesOrder` come first, in that order; the rest follow by date.
-function bySeriesOrder(a: Post, b: Post): number {
-	const orderA = a.data.seriesOrder;
-	const orderB = b.data.seriesOrder;
-	if (orderA !== undefined && orderB !== undefined) return orderA - orderB;
-	if (orderA !== undefined) return -1;
-	if (orderB !== undefined) return 1;
-	return byPubDate(a, b);
-}
-
-// Drafts are left out of a build but kept in `astro dev`, so they can be proofread in place.
 export function getPosts(): Promise<Post[]> {
-	return getCollection('blog', ({ data }) => import.meta.env.DEV || !data.draft);
+	return getCollection('blog', ({ data }) => isVisible(data, import.meta.env.DEV));
 }
 
 // Oldest first.
 export async function getEpisodes(): Promise<Episode[]> {
-	const posts = (await getPosts()).sort(byPubDate);
-	const unpublished = await getCollection('blog', ({ data }) => !import.meta.env.DEV && data.draft);
+	const everyPost = await getCollection('blog');
+	const posts = everyPost.filter(({ data }) => isVisible(data, import.meta.env.DEV)).sort(byPubDate);
 
 	const registry = new Map(
 		(await getCollection('series')).map((entry) => [entry.id, entry.data] as const),
 	);
-	const everyPost = [...posts, ...unpublished];
 	for (const post of everyPost) {
-		const slug = seriesOf(post);
+		const slug = seriesOf(post.id);
 		if (slug && !registry.has(slug)) {
 			throw new Error(`${post.filePath ?? post.id}: folder "${slug}" is not in src/content/series.json`);
 		}
@@ -83,37 +64,29 @@ export async function getEpisodes(): Promise<Episode[]> {
 		}
 	}
 	for (const slug of registry.keys()) {
-		if (!everyPost.some((post) => seriesOf(post) === slug)) {
+		if (!everyPost.some((post) => seriesOf(post.id) === slug)) {
 			throw new Error(`src/content/series.json: "${slug}" has no folder of posts in src/content/blog`);
 		}
 	}
 
-	const members = new Map<string, Post[]>();
-	for (const post of posts) {
-		const slug = seriesOf(post);
-		if (slug) members.set(slug, [...(members.get(slug) ?? []), post]);
-	}
+	const placements = placeEpisodes(
+		everyPost.map(({ id, data }) => ({
+			id,
+			draft: data.draft,
+			seriesOrder: data.seriesOrder,
+			pubDate: data.pubDate.valueOf(),
+		})),
+		import.meta.env.DEV,
+	);
 
-	const positions = new Map<string, SeriesPosition>();
-	for (const [slug, seriesPosts] of members) {
+	return posts.map((post) => {
+		const placement = placements.get(post.id);
+		if (!placement) return { post, series: undefined };
+		const { series: slug, number, total, unpublishedAfter } = placement;
 		// The `!` is safe: every folder was found in the registry above.
 		const { name, description, tone } = registry.get(slug)!;
-		seriesPosts.sort(bySeriesOrder).forEach((post, index) => {
-			positions.set(post.id, {
-				name,
-				slug,
-				description,
-				tone,
-				number: index + 1,
-				total: seriesPosts.length,
-				unpublishedAfter: unpublished.filter(
-					(draft) => seriesOf(draft) === slug && bySeriesOrder(draft, post) > 0,
-				).length,
-			});
-		});
-	}
-
-	return posts.map((post) => ({ post, series: positions.get(post.id) }));
+		return { post, series: { name, slug, description, tone, number, total, unpublishedAfter } };
+	});
 }
 
 export function groupSeries(episodes: Episode[]): Series[] {
