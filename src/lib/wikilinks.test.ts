@@ -188,7 +188,9 @@ describe('linkWikilinks', () => {
 		});
 
 		it('fails when two posts share a title', () => {
-			expect(failure('', [post('b', 'Same'), post('c', 'Same')])).toThrow('"Same" is the title of both');
+			expect(failure('', [post('b', 'Same'), post('c', 'Same')])).toThrow(
+				'"Same" is the title of both /content/b.md and /content/c.md',
+			);
 		});
 	});
 });

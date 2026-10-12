@@ -23,7 +23,7 @@ Consult these guides before working on related tasks:
 
 ## Linking between posts
 
-Link to another post or to a section with a wikilink, never with a hand-written URL. `src/lib/remarkWikilinks.ts` resolves the names and fails the build when one matches nothing.
+Link to another post or to a section with a wikilink, never with a hand-written URL. `src/lib/wikilinks.ts` resolves the names, and a build stops before rendering when one matches nothing.
 
 - `[[版本控制]]` links to the post with that `title` and shows the title as it is.
 - `[[#提交改動]]` links to a heading of the same post and shows 「提交改動」.
@@ -36,4 +36,4 @@ Write the heading without backticks. A link to a draft is plain text in a build.
 
 A series is a folder in `src/content/blog/`: every post in `blog/<key>/` belongs to it and `/blog/<key>/` is its page. A post directly in `blog/` is standalone. Do not add a `series` field to frontmatter; set only `seriesOrder` for the post's place.
 
-Each folder needs an entry under the same key in `src/content/series.json`, with the name, an optional description and the tone of its colour block. The build fails when a folder has no entry, an entry has no folder, a standalone post is named like a series, or a series or standalone post is named like a page in `src/pages/`.
+Each folder needs an entry under the same key in `src/content/series.json`, with the name, an optional description and the tone of its colour block. Every content rule is checked by `src/lib/contentProblems.ts`, which lists all the problems at once: `astro dev` logs them as warnings. The build fails when a folder has no entry, an entry has no folder, a standalone post is named like a series, or a series or standalone post is named like a page in `src/pages/`.

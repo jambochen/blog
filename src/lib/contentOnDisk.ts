@@ -18,6 +18,8 @@ export interface PostFile extends PostRecord {
 export interface Content {
 	posts: PostFile[];
 	series: Record<string, SeriesDetails>;
+	// Every name already taken at the site's root, mapped to what holds it.
+	reserved: Map<string, string>;
 }
 
 const frontmatterSchema = z.object({ ...postFields, slug: z.string().optional() });
@@ -34,9 +36,22 @@ function idOf(entry: string, extension: string, slug: string | undefined): strin
 		.join('/');
 }
 
+// Series and standalone posts are served from the site's root, beside the
+// pages and the folders a build writes there.
+function readReserved(pages: string): Map<string, string> {
+	return new Map([
+		...readdirSync(pages).map((entry) => {
+			const name = entry.replace(/\.[^.]+$/, '');
+			return [name, `the page src/pages/${name}`] as const;
+		}),
+		['_astro', 'the folder a build writes its assets to'],
+		['pagefind', 'the folder a build writes the search index to'],
+	]);
+}
+
 // Not cached: in `astro dev` a renamed title or heading has to reach the posts
 // that refer to it without a restart.
-export function readContent(root = resolve('src/content')): Content {
+export function readContent(root = resolve('src/content'), pages = resolve('src/pages')): Content {
 	const blog = join(root, 'blog');
 	const posts: PostFile[] = [];
 	for (const entry of readdirSync(blog, { recursive: true, encoding: 'utf8' })) {
@@ -62,5 +77,5 @@ export function readContent(root = resolve('src/content')): Content {
 	const series = z
 		.record(z.string(), seriesSchema)
 		.parse(JSON.parse(readFileSync(join(root, 'series.json'), 'utf8')));
-	return { posts, series };
+	return { posts, series, reserved: readReserved(pages) };
 }

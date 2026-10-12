@@ -7,8 +7,9 @@ import remarkMdx from 'remark-mdx';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { visit } from 'unist-util-visit';
-import { type Catalogue, episodeLabel } from './catalogue.ts';
-import type { PostFile } from './contentOnDisk.ts';
+import { type Catalogue, catalogue, episodeLabel } from './catalogue.ts';
+import type { Content, PostFile } from './contentOnDisk.ts';
+import type { Routes } from './routes.ts';
 import { seriesOf } from './series.ts';
 
 export interface PostSource extends PostFile {
@@ -83,11 +84,16 @@ function sectionsOf(body: string, extension: string): Section[] {
 	return sections;
 }
 
-// Turns `[[篇名]]`, `[[#標題]]` and `[[篇名#標題]]` in the post at `path` into
-// links to posts and their sections, with `|` introducing the text to show
-// instead of the default. Throws at a reference that matches nothing, so a
-// renamed title or heading cannot leave a dead link behind.
-export function linkWikilinks(tree: Root, path: string | undefined, site: Catalogue<PostSource>): void {
+export function wikilinkSite(content: Content, routes: Routes, showDrafts: boolean): Catalogue<PostSource> {
+	return catalogue(
+		content.posts.map((post) => ({ ...post, post: { ...post, url: routes.post(post.id) } })),
+		content.series,
+		showDrafts,
+	);
+}
+
+// Reads every post once, so the links of many posts can be made from one reading.
+function linker(site: Catalogue<PostSource>): (tree: Root, path: string | undefined) => void {
 	const target = (post: PostSource, rest: Partial<Target>): Target => ({
 		...post,
 		hidden: false,
@@ -100,7 +106,8 @@ export function linkWikilinks(tree: Root, path: string | undefined, site: Catalo
 			target(post, { seriesName: series?.name, episode: placement?.number }),
 		),
 		...site.drafts.map((post) => target(post, { hidden: true })),
-	];
+		// A problem then names the same files in the same order on every run.
+	].sort((a, b) => (a.path < b.path ? -1 : 1));
 
 	const byTitle = new Map<string, Target>();
 	for (const post of posts) {
@@ -108,16 +115,17 @@ export function linkWikilinks(tree: Root, path: string | undefined, site: Catalo
 		if (other) throw new Error(`"${post.title}" is the title of both ${other.path} and ${post.path}`);
 		byTitle.set(post.title, post);
 	}
-	const self = posts.find((post) => post.path === path);
+	return (tree, path) => {
+		const self = posts.find((post) => post.path === path);
 
-	// An episode number means little without its series, so the series is
-	// named unless the reader is already inside it.
-	const placeOf = (post: Target): string => {
-		if (post === self) return '本篇';
-		if (!post.episode) return '';
-		const position = episodeLabel(post.episode);
-		if (post.seriesKey === self?.seriesKey) return position;
-		return `${post.seriesName} · ${position}`;
+		// An episode number means little without its series, so the series is
+		// named unless the reader is already inside it.
+		const placeOf = (post: Target): string => {
+			if (post === self) return '本篇';
+			if (!post.episode) return '';
+			const position = episodeLabel(post.episode);
+			if (post.seriesKey === self?.seriesKey) return position;
+			return `${post.seriesName} · ${position}`;
 	};
 
 	const linkFor = (source: string, title = '', heading?: string, label?: string): Link | string => {
@@ -151,4 +159,33 @@ export function linkWikilinks(tree: Root, path: string | undefined, site: Catalo
 	visit(tree, 'text', ({ value }) => {
 		if (value.includes('[[')) throw new Error(`"${value}" holds an incomplete reference`);
 	});
+	};
+}
+
+// Turns `[[篇名]]`, `[[#標題]]` and `[[篇名#標題]]` in the post at `path` into
+// links to posts and their sections, with `|` introducing the text to show
+// instead of the default. Throws at a reference that matches nothing, so a
+// renamed title or heading cannot leave a dead link behind.
+export function linkWikilinks(tree: Root, path: string | undefined, site: Catalogue<PostSource>): void {
+	linker(site)(tree, path);
+}
+
+// One line a problem, each naming the file to fix; at most one for a file.
+export function wikilinkProblems(site: Catalogue<PostSource>): string[] {
+	let link: ReturnType<typeof linker>;
+	try {
+		link = linker(site);
+	} catch (error) {
+		return [error instanceof Error ? error.message : String(error)];
+	}
+	const problems: string[] = [];
+	const posts = [...site.posts.map(({ post }) => post), ...site.drafts];
+	for (const post of posts.sort((a, b) => (a.path < b.path ? -1 : 1))) {
+		try {
+			link((post.extension === '.mdx' ? mdx : markdown).parse(post.body), post.path);
+		} catch (error) {
+			problems.push(`${post.path}: ${error instanceof Error ? error.message : error}`);
+		}
+	}
+	return problems;
 }

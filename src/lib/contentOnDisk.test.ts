@@ -55,6 +55,13 @@ describe('readContent', () => {
 		expect(() => readContent(root)).toThrow(join(root, 'blog', 'a.md'));
 	});
 
+	it('reserves the name of every page and of the folders a build writes', () => {
+		const root = content({ 'blog/a.md': post(''), 'pages/about.astro': '', 'pages/rss.xml.js': '', 'pages/[series].astro': '' });
+		const { reserved } = readContent(root, join(root, 'pages'));
+		expect([...reserved.keys()].sort()).toEqual(['[series]', '_astro', 'about', 'pagefind', 'rss.xml']);
+		expect(reserved.get('about')).toBe('the page src/pages/about');
+	});
+
 	it('reads the series by key', () => {
 		const root = content({ 'series.json': '{"s":{"name":"Sea","tone":"indigo"}}', 'blog/s/a.md': post('') });
 		expect(readContent(root).series).toEqual({ s: { name: 'Sea', tone: 'indigo' } });

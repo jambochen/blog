@@ -1,26 +1,15 @@
 import { type CollectionEntry, getCollection } from 'astro:content';
 import { type Catalogue, catalogue, type Entry, type Series } from './catalogue.ts';
 import { readContent } from './contentOnDisk.ts';
-import { seriesProblems } from './series.ts';
 
 type Post = CollectionEntry<'blog'>;
 
 export type SiteEntry = Entry<Post>;
 export type SiteSeries = Series<Post>;
 
-// Series and standalone posts are served from the site's root, beside these
-// pages and the folders a build writes there.
-const RESERVED = new Map([
-	...Object.keys(import.meta.glob('../pages/*')).map((path) => {
-		const name = path.replace('../pages/', '').replace(/\.[^.]+$/, '');
-		return [name, `the page src/pages/${name}`] as const;
-	}),
-	['_astro', 'the folder a build writes its assets to'],
-	['pagefind', 'the folder a build writes the search index to'],
-]);
-
 // A wikilink's address is built from the id read from disk, and the page it
-// should open is built from Astro's id.
+// should open is built from Astro's id. Checked here and not with the other
+// rules in `contentProblems.ts`, which run before Astro has loaded its collection.
 function idDisagreements(astroIds: string[]): string[] {
 	const diskIds = readContent().posts.map(({ id }) => id);
 	return [
@@ -35,14 +24,7 @@ async function build(): Promise<Catalogue<Post>> {
 		(await getCollection('series')).map((entry) => [entry.id, entry.data] as const),
 	);
 
-	const problems = [
-		...seriesProblems(
-			posts.map(({ id, filePath }) => ({ id, path: filePath })),
-			Object.keys(registry),
-			RESERVED,
-		),
-		...idDisagreements(posts.map(({ id }) => id)),
-	];
+	const problems = idDisagreements(posts.map(({ id }) => id));
 	if (problems.length) throw new Error(problems.join('\n'));
 
 	return catalogue(

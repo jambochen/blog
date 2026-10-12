@@ -9,9 +9,10 @@ import pagefind from 'astro-pagefind';
 import { defineConfig, fontProviders } from 'astro/config';
 import rehypeMathjax from 'rehype-mathjax';
 import remarkMath from 'remark-math';
+import { contentCheck } from './src/lib/contentCheck.ts';
 import { remarkHeadingText } from './src/lib/remarkHeadingText.ts';
 import { remarkMermaid } from './src/lib/remarkMermaid.ts';
-import { remarkWikilinks, wikilinkCheck } from './src/lib/remarkWikilinks.ts';
+import { remarkWikilinks } from './src/lib/remarkWikilinks.ts';
 
 // The Latin faces sit in front of the CJK face in one font-family stack, so they
 // must not carry a generic fallback: `serif` would match first and swallow every
@@ -64,7 +65,7 @@ export default defineConfig({
 		mdx(),
 		sitemap(),
 		icon(),
-		wikilinkCheck(),
+		contentCheck(),
 		pagefind(),
 	],
 	// Each image is built in several widths, so a phone does not download a desktop screenshot.
