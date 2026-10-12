@@ -18,6 +18,11 @@ import { remarkWikilinks, wikilinkCheck } from './src/lib/remarkWikilinks.ts';
 // Chinese glyph before the stack reaches the CJK face.
 const latinOnly = { fallbacks: [], optimizedFallbacks: false, subsets: /** @type {[string]} */ (['latin']) };
 
+// Astro sizes a fallback to the web font's average glyph width. For a CJK face that
+// width is a full-width character's, so the Latin fallback is drawn at about twice
+// its size until the web font arrives, and titles with Latin words jump on load.
+const cjk = { optimizedFallbacks: false };
+
 // GitHub Pages serves a project site under the repository name. Also handed to
 // the wikilink plugin, which runs outside Vite and cannot read `BASE_URL`.
 const BASE = '/blog';
@@ -74,6 +79,7 @@ export default defineConfig({
 			styles: ['normal'],
 			subsets: ['chinese-traditional', 'latin'],
 			fallbacks: ['serif'],
+			...cjk,
 		},
 		{
 			// Running text is set in a sans face: the thin horizontal strokes of the serif
@@ -85,6 +91,7 @@ export default defineConfig({
 			styles: ['normal'],
 			subsets: ['chinese-traditional', 'latin'],
 			fallbacks: ['sans-serif'],
+			...cjk,
 		},
 		{
 			provider: fontProviders.fontsource(),
@@ -92,6 +99,9 @@ export default defineConfig({
 			cssVariable: '--font-ui',
 			weights: [500, 600],
 			styles: ['normal', 'italic'],
+			// The fallback is far wider than this condensed face, so a number drawn in it
+			// first would change shape; the file is small and preloaded, so the wait is short.
+			display: 'block',
 			...latinOnly,
 		},
 		{

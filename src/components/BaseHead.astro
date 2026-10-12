@@ -42,7 +42,8 @@ const { title, description, image = FallbackImage } = Astro.props;
 
 <Font cssVariable="--font-mincho" />
 <Font cssVariable="--font-gothic" />
-<Font cssVariable="--font-ui" />
+<!-- The series numbers are set large in this face, so a late swap from the fallback is seen as the number changing. -->
+<Font cssVariable="--font-ui" preload={[{ weight: 500, style: 'normal' }]} />
 <Font cssVariable="--font-code" />
 
 <!-- Canonical URL -->
