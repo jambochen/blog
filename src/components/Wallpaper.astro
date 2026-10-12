@@ -1,6 +1,8 @@
 ---
+import type { WallpaperName } from '../lib/wallpapers';
+
 interface Props {
-	scene: 'terrain' | 'threeBody';
+	scene: WallpaperName;
 }
 
 const { scene } = Astro.props;
@@ -10,6 +12,7 @@ const { scene } = Astro.props;
 
 <style>
 	.wallpaper {
+		--edge: calc(var(--column) / 2);
 		position: fixed;
 		inset: 0;
 		/* Behind the page content but in front of the paper colour, which sits on <html>. */
@@ -18,98 +21,31 @@ const { scene } = Astro.props;
 		height: 100%;
 		pointer-events: none;
 	}
-	/* Full strength only in the side margins; behind the column of `.wrap` (66rem) it is dimmed so headings stay easy to read. */
-	.wallpaper[data-scene='terrain'] {
+	/* Each scene says what becomes of it behind the column of text; it is at full strength only in the side margins. */
+	.wallpaper[data-column] {
 		mask-image: linear-gradient(
 			to right,
-			#000 calc(50% - 36rem),
-			rgb(0 0 0 / 0.3) calc(50% - 33rem),
-			rgb(0 0 0 / 0.3) calc(50% + 33rem),
-			#000 calc(50% + 36rem)
+			#000 calc(50% - var(--edge) - 3rem),
+			var(--behind-text) calc(50% - var(--edge)),
+			var(--behind-text) calc(50% + var(--edge)),
+			#000 calc(50% + var(--edge) + 3rem)
 		);
 	}
-	/* Sits in a corner beside long text; where the screen leaves no margin, this hides it altogether. */
-	.wallpaper[data-scene='threeBody'] {
-		mask-image: linear-gradient(
-			to right,
-			#000 calc(50% - 36rem),
-			transparent calc(50% - 33rem),
-			transparent calc(50% + 33rem),
-			#000 calc(50% + 36rem)
-		);
+	.wallpaper[data-column='dimmed'] {
+		--behind-text: rgb(0 0 0 / 0.3);
+	}
+	.wallpaper[data-column='hidden'] {
+		--behind-text: transparent;
 	}
 </style>
 
 <script>
-	import type { SceneFactory } from '../lib/wallpapers/scene';
-	import { terrain } from '../lib/wallpapers/terrain';
-	import { threeBody } from '../lib/wallpapers/threeBody';
-
-	const SCENES: Record<string, SceneFactory> = { terrain, threeBody };
+	import { WALLPAPERS } from '../lib/wallpapers';
+	import { mountScene } from '../lib/wallpapers/host';
 
 	const canvas = document.querySelector<HTMLCanvasElement>('.wallpaper');
-	const context = canvas?.getContext('2d');
-	const factory = SCENES[canvas?.dataset.scene ?? ''];
-
-	if (canvas && context && factory) {
-		const root = document.documentElement;
-		const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-		let scene: ReturnType<SceneFactory> | undefined;
-		let running = false;
-		let last = 0;
-
-		const frame = (now: number) => {
-			const elapsed = Math.min((now - last) / 1000, 0.05);
-			last = now;
-			running = !!scene && scene.frame(context, elapsed) && !still && !document.hidden;
-			if (running) requestAnimationFrame(frame);
-		};
-
-		// The loop stops when the tab is hidden or the scene reports it is at rest, and starts again from here.
-		const wake = () => {
-			if (running) return;
-			running = true;
-			last = performance.now();
-			requestAnimationFrame(frame);
-		};
-
-		const resize = () => {
-			const ratio = devicePixelRatio || 1;
-			canvas.width = innerWidth * ratio;
-			canvas.height = innerHeight * ratio;
-			context.setTransform(ratio, 0, 0, ratio, 0, 0);
-			scene?.resize(innerWidth, innerHeight);
-			wake();
-		};
-
-		// A scene reads the theme when it is built, so a theme change rebuilds it.
-		const start = () => {
-			const style = getComputedStyle(root);
-			scene = factory({
-				ink: style.getPropertyValue('--ink').trim(),
-				dark: root.dataset.theme === 'dark',
-				font: `${style.getPropertyValue('--font-ui').trim()}, sans-serif`,
-				// Matches the `max-width` of `.wrap`.
-				textWidth: 66 * parseFloat(style.fontSize),
-			});
-			resize();
-		};
-
-		addEventListener('resize', resize);
-		document.addEventListener('visibilitychange', wake);
-		new MutationObserver(start).observe(root, { attributeFilter: ['data-theme'] });
-
-		if (!still) {
-			addEventListener(
-				'pointermove',
-				(event) => {
-					scene?.move?.(event.clientX, event.clientY);
-					wake();
-				},
-				{ passive: true },
-			);
-		}
-
-		start();
+	const name = canvas?.dataset.scene;
+	if (canvas && name && name in WALLPAPERS) {
+		mountScene(canvas, WALLPAPERS[name as keyof typeof WALLPAPERS], { followTheme: true });
 	}
 </script>

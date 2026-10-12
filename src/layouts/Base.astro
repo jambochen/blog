@@ -3,11 +3,12 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import Wallpaper from '../components/Wallpaper.astro';
+import type { WallpaperName } from '../lib/wallpapers';
 
 interface Props {
 	title: string;
 	description: string;
-	wallpaper?: 'terrain' | 'threeBody';
+	wallpaper?: WallpaperName;
 }
 
 const { title, description, wallpaper = 'terrain' } = Astro.props;

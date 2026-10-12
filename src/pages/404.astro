@@ -157,12 +157,13 @@ import { routes } from '../lib/siteRoutes';
 </style>
 
 <script>
-	import { startCorridor } from '../lib/memoryCorridor';
+	import { corridor as corridorScene } from '../lib/memoryCorridor';
+	import { mountScene } from '../lib/wallpapers/host';
 	import { routes } from '../lib/siteRoutes';
 
 	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 	const canvas = document.querySelector<HTMLCanvasElement>('.lines');
-	const corridor = canvas && startCorridor(canvas, still);
+	const corridor = canvas && mountScene(canvas, corridorScene);
 
 	const path = document.querySelector('.path');
 	if (path) {

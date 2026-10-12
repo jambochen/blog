@@ -1,6 +1,6 @@
 # 地形掃描背景
 
-頁面背景的地形圖由 `src/lib/wallpapers/terrain.ts` 繪製，`src/components/Wallpaper.astro` 負責畫布、動畫迴圈與輸入事件。這份文件記錄它怎麼生成、為什麼這樣選，以及已知的不足。
+頁面背景的地形圖由 `src/lib/wallpapers/terrain.ts` 繪製，高度、等高線與測量點的計算在 `src/lib/wallpapers/terrainMap.ts`，`src/lib/wallpapers/host.ts` 負責畫布、動畫迴圈與輸入事件。這份文件記錄它怎麼生成、為什麼這樣選，以及已知的不足。
 
 ## 目標
 

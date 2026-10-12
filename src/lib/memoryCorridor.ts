@@ -1,3 +1,5 @@
+import type { Scene, SceneFactory } from './wallpapers/scene.ts';
+
 type Axis = 'x' | 'y' | 'z';
 
 interface Line {
@@ -77,10 +79,12 @@ function lines(): Line[] {
 	return [...upright, ...level, ...receding];
 }
 
-export function startCorridor(canvas: HTMLCanvasElement, still: boolean) {
-	const context = canvas.getContext('2d');
-	if (!context) return { rush: () => {} };
+export interface Corridor extends Scene {
+	// A burst of speed, as the page is left.
+	rush(): void;
+}
 
+export const corridor: SceneFactory<Corridor> = (_palette, still) => {
 	const scene = lines();
 	const specks = Array.from(
 		{ length: 40 },
@@ -101,8 +105,6 @@ export function startCorridor(canvas: HTMLCanvasElement, still: boolean) {
 	let pitch = 0;
 	let wantedYaw = 0;
 	let wantedPitch = 0;
-	let running = false;
-	let last = 0;
 
 	const turned = ([x, y, z]: Point): Point => {
 		const turnedX = x * Math.cos(yaw) - z * Math.sin(yaw);
@@ -112,7 +114,12 @@ export function startCorridor(canvas: HTMLCanvasElement, still: boolean) {
 
 	const onScreen = ([x, y, z]: Point) => [width / 2 + (focal * x) / z, height * HORIZON + (focal * y) / z] as const;
 
-	const stroke = (start: Point, end: Point, alphas: [number, number, number]) => {
+	const stroke = (
+		context: CanvasRenderingContext2D,
+		start: Point,
+		end: Point,
+		alphas: [number, number, number],
+	) => {
 		let [p, q] = [turned(start), turned(end)];
 		if (p[2] < NEAR && q[2] < NEAR) return;
 		// A point behind the camera projects to the wrong side of the screen, so the line is cut at the near plane.
@@ -145,7 +152,7 @@ export function startCorridor(canvas: HTMLCanvasElement, still: boolean) {
 		}
 	};
 
-	const draw = () => {
+	const draw = (context: CanvasRenderingContext2D) => {
 		context.clearRect(0, 0, width, height);
 
 		for (const line of scene) {
@@ -154,13 +161,13 @@ export function startCorridor(canvas: HTMLCanvasElement, still: boolean) {
 				// The period is longer than the corridor by the line's own length, so the line has passed the camera whole before it returns at the far end.
 				const start = wrap(line.from - travel + length, DEPTH + length) - length;
 				const ends = [start, start + length / 2, start + length].map((z) => visibility(z) * line.glow);
-				stroke([line.a, line.b, start], [line.a, line.b, start + length], ends as [number, number, number]);
+				stroke(context, [line.a, line.b, start], [line.a, line.b, start + length], ends as [number, number, number]);
 				continue;
 			}
 			const z = wrap(line.b - travel, DEPTH);
 			const alphas: [number, number, number] = [0, visibility(z) * line.glow, 0];
-			if (line.axis === 'y') stroke([line.a, line.from, z], [line.a, line.to, z], alphas);
-			else stroke([line.from, line.a, z], [line.to, line.a, z], alphas);
+			if (line.axis === 'y') stroke(context, [line.a, line.from, z], [line.a, line.to, z], alphas);
+			else stroke(context, [line.from, line.a, z], [line.to, line.a, z], alphas);
 		}
 
 		for (const speck of specks) {
@@ -177,53 +184,24 @@ export function startCorridor(canvas: HTMLCanvasElement, still: boolean) {
 		}
 	};
 
-	const frame = (now: number) => {
-		const elapsed = Math.min((now - last) / 1000, 0.05);
-		last = now;
-		travel += elapsed * (CRUISE + RUSH * surge);
-		surge *= Math.exp(-elapsed * 2.2);
-		yaw += (wantedYaw - yaw) * Math.min(elapsed * 3, 1);
-		pitch += (wantedPitch - pitch) * Math.min(elapsed * 3, 1);
-		draw();
-		running = !still && !document.hidden;
-		if (running) requestAnimationFrame(frame);
-	};
-
-	const wake = () => {
-		if (running) return;
-		running = true;
-		last = performance.now();
-		requestAnimationFrame(frame);
-	};
-
-	const resize = () => {
-		const ratio = devicePixelRatio || 1;
-		width = innerWidth;
-		height = innerHeight;
-		focal = 0.9 * Math.max(width, height);
-		canvas.width = width * ratio;
-		canvas.height = height * ratio;
-		context.setTransform(ratio, 0, 0, ratio, 0, 0);
-		wake();
-	};
-
-	addEventListener('resize', resize);
-	document.addEventListener('visibilitychange', wake);
-	if (!still) {
-		addEventListener(
-			'pointermove',
-			(event) => {
-				wantedYaw = (event.clientX / width - 0.5) * 0.24;
-				wantedPitch = (event.clientY / height - 0.5) * 0.16;
-			},
-			{ passive: true },
-		);
-	}
-	resize();
-
 	return {
-		rush: () => {
+		resize(view) {
+			({ width, height } = view);
+			focal = 0.9 * Math.max(width, height);
+		},
+		frame(context, elapsed) {
+			travel += elapsed * (CRUISE + RUSH * surge);
+			surge *= Math.exp(-elapsed * 2.2);
+			yaw += (wantedYaw - yaw) * Math.min(elapsed * 3, 1);
+			pitch += (wantedPitch - pitch) * Math.min(elapsed * 3, 1);
+			draw(context);
+		},
+		move(x, y) {
+			wantedYaw = (x / width - 0.5) * 0.24;
+			wantedPitch = (y / height - 0.5) * 0.16;
+		},
+		rush() {
 			if (!still) surge = 1.5;
 		},
 	};
-}
+};
