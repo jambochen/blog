@@ -1,25 +1,25 @@
 ---
-// Times are in units of one file's computation. The start-up and merge costs are chosen so that
-// four files finish sooner in sequence and twenty-four finish sooner in parallel.
-const FILE_COUNTS = [4, 24];
-const WORKERS = 4;
-const START = 3;
-const MERGE = 1;
-const cells = Array.from({ length: Math.max(...FILE_COUNTS) }, (_, index) => index);
+import { FILE_COUNTS, laneAt, raceEnd, WORKERS } from '../lib/figures/parallelRace';
+import FigureFrame from './FigureFrame.astro';
+
+// Opens on the larger count, which is the run the post describes first.
+const files = Math.max(...FILE_COUNTS);
+const scale = raceEnd(files);
 const workers = Array.from({ length: WORKERS }, (_, index) => index + 1);
 const lanes = [
-	['sequential', 'Sequential'],
-	['parallel', 'Parallel'],
-];
+	{ mode: 'sequential', name: 'Sequential' },
+	{ mode: 'parallel', name: 'Parallel' },
+].map((lane) => ({ ...lane, ...laneAt(files, lane.mode === 'parallel', 0) }));
+const bars = [
+	['start', 'overhead'],
+	['run', 'work'],
+	['merge', 'overhead'],
+] as const;
 ---
 
-<figure
+<FigureFrame
 	class="race"
-	data-workers={WORKERS}
-	data-start={START}
-	data-merge={MERGE}
-	data-files={FILE_COUNTS.at(-1)}
-	aria-label="Sequential and parallel runs of the same files: the parallel run starts its workers first, then computes four files at a time and merges the results"
+	label="Sequential and parallel runs of the same files: the parallel run starts its workers first, then computes four files at a time and merges the results"
 >
 	<div class="actions">
 		<button type="button" data-run>Run</button>
@@ -27,7 +27,7 @@ const lanes = [
 			Files
 			{
 				FILE_COUNTS.map((count) => (
-					<button type="button" data-count={count} aria-pressed={count === FILE_COUNTS.at(-1) ? 'true' : 'false'}>
+					<button type="button" data-count={count} aria-pressed={count === files ? 'true' : 'false'}>
 						{count}
 					</button>
 				))
@@ -36,82 +36,57 @@ const lanes = [
 	</div>
 
 	{
-		lanes.map(([mode, name]) => (
+		lanes.map(({ mode, name, phase, clock, cells, cores, spans }) => (
 			<div class="lane" data-mode={mode}>
 				<div class="head">
 					<span class="name">{name}</span>
 					<span class="cores">
-						<span class="core" data-core="main">
-							main
-						</span>
-						{workers.map((worker) => (
-							<span class="core" data-core={worker}>
-								{worker}
+						{['main', ...workers].map((core, index) => (
+							<span class="core" data-state={cores[index]}>
+								{core}
 							</span>
 						))}
 					</span>
 					<span class="clock">
-						<output data-out="phase" />
-						<output data-out="time">0.0</output> s
+						<span data-out="phase">{phase}</span>
+						<output data-out="time">{clock.toFixed(1)}</output> s
 					</span>
 				</div>
 				<div class="files">
-					{cells.map(() => (
-						<span class="cell" />
+					{cells.map(({ state, progress }) => (
+						<span class="cell" data-state={state} style={`--progress: ${progress}`} />
 					))}
 				</div>
 				<div class="track">
-					<span class="bar overhead" data-bar="start" />
-					<span class="bar work" data-bar="run" />
-					<span class="bar overhead" data-bar="merge" />
+					{bars.map(([bar, kind]) => (
+						<span
+							class:list={['bar', kind]}
+							data-bar={bar}
+							data-empty={spans[bar] === 0}
+							style={`width: ${(spans[bar] / scale) * 100}%`}
+						/>
+					))}
 				</div>
 			</div>
 		))
 	}
 
 	<p class="result" aria-live="polite"><strong data-out="speedup"></strong></p>
-</figure>
+</FigureFrame>
 
 <style>
 	.race {
 		--done: color-mix(in srgb, var(--ink) 16%, transparent);
-		margin-inline: 0;
-		font-family: var(--font-ui), var(--font-gothic), sans-serif;
-		font-size: 0.9rem;
-		line-height: 1.5;
 	}
+	/* Wider than between the choices, so Run reads apart from them. */
 	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5rem 1.5rem;
-		margin-bottom: 0.5rem;
+		column-gap: 1.5rem;
 	}
 	.counts {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		color: var(--muted);
-	}
-	.actions button {
-		padding: 0.3rem 0.75rem;
-		border: 1px solid var(--muted);
-		border-radius: 0;
-		background: none;
-		color: var(--ink);
-		font: inherit;
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-		cursor: pointer;
-	}
-	.actions button:hover {
-		border-color: var(--ink);
-		background: var(--surface);
-	}
-	.actions button[aria-pressed='true'] {
-		border-color: var(--ink);
-		background: var(--ink);
-		color: var(--paper);
 	}
 	.lane {
 		margin-top: 1.25rem;
@@ -122,9 +97,6 @@ const lanes = [
 		align-items: center;
 		gap: 0.25rem 1rem;
 		margin-bottom: 0.4rem;
-	}
-	.name {
-		font-weight: 600;
 	}
 	.cores {
 		display: flex;
@@ -143,7 +115,7 @@ const lanes = [
 	}
 	.core[data-state='starting'] {
 		border: 1px solid var(--accent);
-		background: linear-gradient(to right, color-mix(in srgb, var(--accent) 22%, transparent) calc(var(--progress) * 100%), transparent 0);
+		background: linear-gradient(to right, var(--tint-accent-strong) calc(var(--progress) * 100%), transparent 0);
 		color: var(--accent);
 	}
 	.core[data-state='busy'] {
@@ -154,23 +126,18 @@ const lanes = [
 	.clock {
 		margin-left: auto;
 		color: var(--muted);
-		font-variant-numeric: tabular-nums;
 	}
-	/* Fixed-width, right-aligned fields, so nothing shifts as the phase or the time changes. */
-	.clock output {
-		display: inline-block;
-		text-align: right;
-	}
+	/* Holds its width like the numbers do, so the time beside it stays put as the phase changes. */
 	.clock [data-out='phase'] {
+		display: inline-block;
 		/* "merge" */
 		min-width: 5ch;
 		margin-right: 0.5rem;
+		text-align: right;
 	}
 	.clock [data-out='time'] {
 		/* "24.0" */
 		min-width: 4ch;
-		color: var(--ink);
-		font-weight: 600;
 	}
 	.files {
 		display: grid;
@@ -178,13 +145,8 @@ const lanes = [
 		gap: 2px;
 	}
 	.cell {
-		display: grid;
-		place-items: center;
 		height: 1.5rem;
-		border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
-		font-family: var(--font-code), monospace;
 		font-size: 0.75rem;
-		font-weight: 700;
 	}
 	/* Cells beyond the chosen file count keep their place, so the figure does not change height. */
 	.cell[data-state='absent'] {
@@ -212,35 +174,29 @@ const lanes = [
 	}
 	.bar.overhead {
 		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		background: var(--tint-accent);
 	}
 	.bar.work {
 		border-color: var(--muted);
-		background: color-mix(in srgb, var(--muted) 15%, transparent);
+		background: var(--tint-muted);
 	}
 	.result {
 		/* Holds the line of the number before a run has finished. */
 		min-height: 2.4rem;
 		margin: 0.75rem 0 0;
 	}
-	.result strong {
-		font-variant-numeric: tabular-nums;
-		font-size: 2rem;
-		line-height: 1.2;
-	}
 </style>
 
 <script>
+	import { FILE_COUNTS, laneAt, raceEnd, speedupLabel } from '../lib/figures/parallelRace';
+
 	const UNIT_MS = 300;
-	const clamp = (value: number) => Math.min(1, Math.max(0, value));
 
 	for (const figure of document.querySelectorAll<HTMLElement>('.race')) {
-		const workers = Number(figure.dataset.workers);
-		const start = Number(figure.dataset.start);
-		const merge = Number(figure.dataset.merge);
+		// The `!` here and below are safe: the markup above holds each of these elements.
 		const speedup = figure.querySelector<HTMLElement>('[data-out="speedup"]')!;
 		const countButtons = [...figure.querySelectorAll<HTMLButtonElement>('[data-count]')];
-		let files = Number(figure.dataset.files);
+		let files = Math.max(...FILE_COUNTS);
 		let frame = 0;
 
 		const lanes = [...figure.querySelectorAll<HTMLElement>('.lane')].map((lane) => ({
@@ -251,71 +207,35 @@ const lanes = [
 			out: (name: string) => lane.querySelector<HTMLElement>(`[data-out="${name}"]`)!,
 		}));
 
-		// Each worker takes one run of neighbouring files and works through it in order.
-		const schedule = (parallel: boolean) => {
-			if (!parallel) return { start: 0, run: files, merge: 0, begins: (index: number) => index, owner: () => 0 };
-			const batch = Math.ceil(files / workers);
-			return {
-				start,
-				run: batch,
-				merge,
-				begins: (index: number) => start + (index % batch),
-				owner: (index: number) => Math.floor(index / batch) + 1,
-			};
-		};
-		const finish = (parallel: boolean) => {
-			const plan = schedule(parallel);
-			return plan.start + plan.run + plan.merge;
-		};
-
 		const draw = (time: number) => {
-			const scale = Math.max(finish(false), finish(true));
+			const scale = raceEnd(files);
 			for (const lane of lanes) {
-				const plan = schedule(lane.parallel);
-				const end = plan.start + plan.run + plan.merge;
-				const clock = Math.min(time, end);
-				const phase =
-					clock === 0 ? '' : clock < plan.start ? 'start' : clock < plan.start + plan.run ? 'run' : clock < end ? 'merge' : 'done';
+				const state = laneAt(files, lane.parallel, time);
 
 				lane.cells.forEach((cell, index) => {
-					const progress = clamp(clock - plan.begins(index));
-					cell.dataset.state = index >= files ? 'absent' : progress === 0 ? 'waiting' : progress < 1 ? 'running' : 'done';
+					const { state: cellState = 'absent', progress = 0, owner } = state.cells[index] ?? {};
+					cell.dataset.state = cellState;
 					cell.style.setProperty('--progress', String(progress));
-					cell.textContent = progress > 0 && lane.parallel ? String(plan.owner(index)) : '';
+					cell.textContent = owner ? String(owner) : '';
 				});
-
-				const used = lane.parallel ? Math.min(workers, files) : 0;
 				lane.cores.forEach((core, index) => {
-					// The first chip is the main process, which works alone in a sequential run and
-					// only hands out and collects in a parallel one.
-					if (index === 0) {
-						const busy = lane.parallel ? phase === 'start' || phase === 'merge' : phase === 'run';
-						core.dataset.state = busy ? 'busy' : 'idle';
-					} else if (index > used) core.dataset.state = 'idle';
-					else core.dataset.state = phase === 'start' ? 'starting' : phase === 'run' ? 'busy' : 'idle';
-					core.style.setProperty('--progress', String(clamp(clock / plan.start)));
+					core.dataset.state = state.cores[index] ?? 'idle';
+					core.style.setProperty('--progress', String(state.startProgress));
 				});
-
-				const spans = {
-					start: Math.min(clock, plan.start),
-					run: clamp((clock - plan.start) / plan.run) * plan.run,
-					merge: Math.max(0, clock - plan.start - plan.run),
-				};
-				for (const [name, length] of Object.entries(spans)) {
+				for (const [name, length] of Object.entries(state.spans)) {
 					const bar = lane.bar(name);
 					bar.style.width = `${(length / scale) * 100}%`;
 					bar.toggleAttribute('data-empty', length === 0);
 				}
-
-				lane.out('phase').textContent = phase;
-				lane.out('time').textContent = clock.toFixed(1);
+				lane.out('phase').textContent = state.phase;
+				lane.out('time').textContent = state.clock.toFixed(1);
 			}
-			speedup.textContent = time >= scale ? `${Number((finish(false) / finish(true)).toFixed(1))}×` : '';
+			speedup.textContent = speedupLabel(files, time);
 		};
 
 		const run = () => {
 			cancelAnimationFrame(frame);
-			const end = Math.max(finish(false), finish(true));
+			const end = raceEnd(files);
 			if (matchMedia('(prefers-reduced-motion: reduce)').matches) return draw(end);
 			const began = performance.now();
 			const tick = (now: number) => {
@@ -326,7 +246,7 @@ const lanes = [
 			frame = requestAnimationFrame(tick);
 		};
 
-		figure.querySelector('[data-run]')!.addEventListener('click', run);
+		figure.querySelector('[data-run]')?.addEventListener('click', run);
 		for (const button of countButtons) {
 			button.addEventListener('click', () => {
 				cancelAnimationFrame(frame);
@@ -335,7 +255,5 @@ const lanes = [
 				draw(0);
 			});
 		}
-
-		draw(0);
 	}
 </script>

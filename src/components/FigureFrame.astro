@@ -1,0 +1,90 @@
+---
+interface Props {
+	// The figure's own class: its scoped styles and its script find it by this.
+	class: string;
+	label: string;
+	style?: string;
+}
+
+// `rest` carries the caller's scope attribute, without which its styles would not reach the root.
+const { class: className, label, ...rest } = Astro.props;
+---
+
+<figure class:list={['figure-frame', className]} aria-label={label} {...rest}>
+	<slot />
+</figure>
+
+<style is:global>
+	/* The form every interactive figure in a post shares: little text, English labels, and numbers that hold
+	   their place. Global because the parts are written by the figures, which a scoped rule here cannot reach. */
+	.figure-frame {
+		--tint-accent: color-mix(in srgb, var(--accent) 12%, transparent);
+		--tint-accent-strong: color-mix(in srgb, var(--accent) 22%, transparent);
+		--tint-muted: color-mix(in srgb, var(--muted) 15%, transparent);
+		margin-inline: 0;
+		font-family: var(--font-ui), var(--font-gothic), sans-serif;
+		font-size: 0.9rem;
+		line-height: 1.5;
+	}
+	.figure-frame .actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	.figure-frame .actions button {
+		padding: 0.3rem 0.75rem;
+		border: 1px solid var(--muted);
+		border-radius: 0;
+		background: none;
+		color: var(--ink);
+		font: inherit;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		cursor: pointer;
+	}
+	/* `:where` keeps this no stronger than the pressed rule below, which has to win on a hovered choice. */
+	.figure-frame .actions button:hover:where(:not(:disabled)) {
+		border-color: var(--ink);
+		background: var(--surface);
+	}
+	.figure-frame .actions button:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
+	.figure-frame .actions button[aria-pressed='true'] {
+		border-color: var(--ink);
+		background: var(--ink);
+		color: var(--paper);
+	}
+	.figure-frame .actions [data-reset] {
+		color: var(--muted);
+	}
+	/* Fixed-width, right-aligned numbers, so nothing shifts as a value gains or loses a digit. */
+	.figure-frame output {
+		display: inline-block;
+		min-width: 2ch;
+		color: var(--ink);
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+	}
+	/* The one large number a figure concludes with. */
+	.figure-frame strong {
+		color: var(--ink);
+		font-variant-numeric: tabular-nums;
+		font-size: 2rem;
+		line-height: 1.2;
+	}
+	.figure-frame .name {
+		font-weight: 600;
+	}
+	.figure-frame .cell {
+		display: grid;
+		place-items: center;
+		border: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent);
+		font-family: var(--font-code), monospace;
+		font-weight: 700;
+	}
+</style>

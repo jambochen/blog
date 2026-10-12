@@ -1,20 +1,20 @@
 ---
-// The job is fixed at ten minutes so the bars share one axis with the worked example in the text.
-const TOTAL = 10;
-const serial = 1;
-const workers = 8;
+import { INITIAL, speedupLimit, TOTAL } from '../lib/figures/speedupLimit';
+import FigureFrame from './FigureFrame.astro';
+
+const { serial, workers } = INITIAL;
+const view = speedupLimit(serial, workers);
 const ticks = [0, 2, 4, 6, 8, 10];
 ---
 
-<figure
+<FigureFrame
 	class="speedup"
 	style={`--total: ${TOTAL}; --serial: ${serial}; --workers: ${workers}`}
-	data-total={TOTAL}
-	aria-label="Speedup limit: set the serial minutes and the number of workers, and compare total run time"
+	label="Speedup limit: set the serial minutes and the number of workers, and compare total run time"
 >
 	<div class="controls">
 		<label>
-			<span><i class="fixed"></i>Serial <output data-out="serial">{serial} min</output></span>
+			<span><i class="fixed"></i>Serial <output data-out="serial">{view.serialLabel}</output></span>
 			<input type="range" min="0" max="5" step="0.5" value={serial} data-in="serial" />
 		</label>
 		<label>
@@ -26,13 +26,13 @@ const ticks = [0, 2, 4, 6, 8, 10];
 	<div class="chart">
 		<span class="name">1</span>
 		<div class="track">
-			<span class="bar fixed" data-bar="serial">1</span>
-			<span class="bar split whole" data-bar="whole">9</span>
+			<span class="bar fixed" data-bar="serial">{view.bars.serial.label}</span>
+			<span class="bar split whole" data-bar="whole">{view.bars.whole.label}</span>
 		</div>
 		<span class="name" data-out="name">{workers}</span>
 		<div class="track">
-			<span class="bar fixed" data-bar="serial">1</span>
-			<span class="bar split shared" data-bar="shared">1.1</span>
+			<span class="bar fixed" data-bar="serial">{view.bars.serial.label}</span>
+			<span class="bar split shared" data-bar="shared">{view.bars.shared.label}</span>
 		</div>
 		<span></span>
 		<div class="axis">
@@ -42,18 +42,12 @@ const ticks = [0, 2, 4, 6, 8, 10];
 	</div>
 
 	<p class="result" aria-live="polite">
-		<strong data-out="speedup">4.7×</strong>
-		<span data-out="limit">limit 10×</span>
+		<strong data-out="speedup">{view.speedup}</strong>
+		<span data-out="limit">{view.limit}</span>
 	</p>
-</figure>
+</FigureFrame>
 
 <style>
-	.speedup {
-		margin-inline: 0;
-		font-family: var(--font-ui), var(--font-gothic), sans-serif;
-		font-size: 0.9rem;
-		line-height: 1.5;
-	}
 	.controls {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
@@ -65,15 +59,8 @@ const ticks = [0, 2, 4, 6, 8, 10];
 		gap: 0.25rem;
 		color: var(--muted);
 	}
-	/* Fixed-width, right-aligned numbers, so nothing shifts as a value gains or loses a digit. */
 	.controls output {
-		display: inline-block;
-		min-width: 2ch;
 		margin-left: 0.5rem;
-		color: var(--ink);
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-		text-align: right;
 	}
 	.controls output[data-out='serial'] {
 		/* "0.5 min" */
@@ -94,7 +81,6 @@ const ticks = [0, 2, 4, 6, 8, 10];
 	}
 	.name {
 		min-width: 2ch;
-		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 		text-align: right;
 	}
@@ -117,12 +103,12 @@ const ticks = [0, 2, 4, 6, 8, 10];
 	.bar.fixed {
 		width: calc(var(--serial) / var(--total) * 100%);
 		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		background: var(--tint-accent);
 		color: var(--accent);
 	}
 	.bar.split {
 		border-color: var(--muted);
-		background: color-mix(in srgb, var(--muted) 15%, transparent);
+		background: var(--tint-muted);
 	}
 	.bar.whole {
 		width: calc((var(--total) - var(--serial)) / var(--total) * 100%);
@@ -171,12 +157,6 @@ const ticks = [0, 2, 4, 6, 8, 10];
 		margin: 0.5rem 0 0;
 		color: var(--muted);
 	}
-	.result strong {
-		font-variant-numeric: tabular-nums;
-		color: var(--ink);
-		font-size: 2rem;
-		line-height: 1.2;
-	}
 	/* The swatches beside the slider names double as the legend for the bars. */
 	.controls i {
 		display: inline-block;
@@ -189,11 +169,11 @@ const ticks = [0, 2, 4, 6, 8, 10];
 	}
 	.controls .fixed {
 		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		background: var(--tint-accent);
 	}
 	.controls .split {
 		border-color: var(--muted);
-		background: color-mix(in srgb, var(--muted) 15%, transparent);
+		background: var(--tint-muted);
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.bar {
@@ -203,41 +183,36 @@ const ticks = [0, 2, 4, 6, 8, 10];
 </style>
 
 <script>
-	const format = (value: number) => String(Number(value.toFixed(1)));
+	import { type Bar, speedupLimit } from '../lib/figures/speedupLimit';
 
 	for (const figure of document.querySelectorAll<HTMLElement>('.speedup')) {
-		const total = Number(figure.dataset.total);
+		// The `!` are safe: the markup above holds an element for every name asked for here.
 		const input = (name: string) => figure.querySelector<HTMLInputElement>(`[data-in="${name}"]`)!;
 		const output = (name: string) => figure.querySelector<HTMLElement>(`[data-out="${name}"]`)!;
-		const bars = (name: string) => [...figure.querySelectorAll<HTMLElement>(`[data-bar="${name}"]`)];
 
-		const label = (bar: HTMLElement, minutes: number) => {
-			bar.textContent = format(minutes);
-			bar.toggleAttribute('data-empty', minutes === 0);
-			// Roughly the share of the axis a three-character label needs.
-			bar.toggleAttribute('data-tight', minutes / total < 0.04);
+		const label = (name: string, { label, empty, tight }: Bar) => {
+			for (const bar of figure.querySelectorAll<HTMLElement>(`[data-bar="${name}"]`)) {
+				bar.textContent = label;
+				bar.toggleAttribute('data-empty', empty);
+				bar.toggleAttribute('data-tight', tight);
+			}
 		};
 
-		const update = () => {
+		figure.addEventListener('input', () => {
 			const serial = Number(input('serial').value);
 			const workers = Number(input('workers').value);
-			const shared = (total - serial) / workers;
-			const speedup = total / (serial + shared);
+			const view = speedupLimit(serial, workers);
 
 			figure.style.setProperty('--serial', String(serial));
 			figure.style.setProperty('--workers', String(workers));
-			output('serial').textContent = `${format(serial)} min`;
+			output('serial').textContent = view.serialLabel;
 			output('workers').textContent = String(workers);
 			output('name').textContent = String(workers);
-			bars('serial').forEach((bar) => label(bar, serial));
-			bars('whole').forEach((bar) => label(bar, total - serial));
-			bars('shared').forEach((bar) => label(bar, shared));
-
-			output('speedup').textContent = `${format(speedup)}×`;
-			output('limit').textContent = serial > 0 ? `limit ${format(total / serial)}×` : 'no limit';
-		};
-
-		figure.addEventListener('input', update);
-		update();
+			label('serial', view.bars.serial);
+			label('whole', view.bars.whole);
+			label('shared', view.bars.shared);
+			output('speedup').textContent = view.speedup;
+			output('limit').textContent = view.limit;
+		});
 	}
 </script>

@@ -1,40 +1,29 @@
 ---
-// One exchange from the post, cut down to a line per step. `kind` decides which arrows light up.
-const steps = [
-	{ kind: 'ask', text: 'What changed in the latest lme4?' },
-	{ kind: 'request', text: 'search "lme4 CRAN NEWS"' },
-	{ kind: 'result', text: 'titles, URLs, snippets' },
-	{ kind: 'request', text: 'open the CRAN page' },
-	{ kind: 'result', text: 'page text' },
-	{ kind: 'request', text: 'open NEWS' },
-	{ kind: 'result', text: 'full changelog' },
-	{ kind: 'answer', text: 'main changes, with sources' },
-];
-const nodes = ['User', 'LLM', 'Harness', 'Tools'];
+import { NODES, STEPS } from '../lib/figures/agentLoop';
+import FigureFrame from './FigureFrame.astro';
 ---
 
-<figure
+<FigureFrame
 	class="loop"
-	data-steps={JSON.stringify(steps)}
-	aria-label="The agent loop, one step at a time: the LLM requests an action, the harness runs it and returns the result, until the LLM answers"
+	label="The agent loop, one step at a time: the LLM requests an action, the harness runs it and returns the result, until the LLM answers"
 >
 	<div class="actions">
 		<button type="button" data-step>Step</button>
 		<button type="button" data-reset>Reset</button>
 		<span class="count">
-			step <output data-out="step">0</output>/{steps.length}
+			step <output data-out="step">0</output>/{STEPS.length}
 			<span class="loops">loops <output data-out="loops">0</output></span>
 		</span>
 	</div>
 
 	<div class="stage">
 		{
-			nodes.map((name, index) => (
+			NODES.map((name, index) => (
 				<>
 					<span class="node" data-node={index}>
 						{name}
 					</span>
-					{index < nodes.length - 1 && (
+					{index < NODES.length - 1 && (
 						<span class="link" data-link={index}>
 							<i class="go" />
 							<i class="back" />
@@ -49,54 +38,15 @@ const nodes = ['User', 'LLM', 'Harness', 'Tools'];
 		<span class="kind" data-out="kind"></span>
 		<span data-out="text"></span>
 	</p>
-</figure>
+</FigureFrame>
 
 <style>
-	.loop {
-		margin-inline: 0;
-		font-family: var(--font-ui), var(--font-gothic), sans-serif;
-		font-size: 0.9rem;
-		line-height: 1.5;
-	}
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 1.25rem;
-	}
-	.actions button {
-		padding: 0.3rem 0.75rem;
-		border: 1px solid var(--muted);
-		border-radius: 0;
-		background: none;
-		color: var(--ink);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
-	}
-	.actions button:hover {
-		border-color: var(--ink);
-		background: var(--surface);
-	}
-	.actions [data-reset] {
-		color: var(--muted);
-	}
 	.count {
 		margin-left: auto;
 		color: var(--muted);
-		font-variant-numeric: tabular-nums;
 	}
 	.loops {
 		margin-left: 1rem;
-	}
-	/* Fixed-width, right-aligned numbers, so nothing shifts as a value changes. */
-	output {
-		display: inline-block;
-		min-width: 2ch;
-		color: var(--ink);
-		font-weight: 600;
-		text-align: right;
 	}
 	.stage {
 		display: flex;
@@ -117,7 +67,7 @@ const nodes = ['User', 'LLM', 'Harness', 'Tools'];
 	}
 	.node[data-active] {
 		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		background: var(--tint-accent);
 	}
 	.link {
 		display: flex;
@@ -211,46 +161,33 @@ const nodes = ['User', 'LLM', 'Harness', 'Tools'];
 </style>
 
 <script>
-	interface Step {
-		kind: 'ask' | 'request' | 'result' | 'answer';
-		text: string;
-	}
-
-	// For each kind: the arrows that carry the text, as [link, direction], and the node it arrives at.
-	const ROUTES: Record<Step['kind'], { arrows: [number, 'go' | 'back'][]; arrives: number }> = {
-		ask: { arrows: [[0, 'go']], arrives: 1 },
-		request: { arrows: [[1, 'go'], [2, 'go']], arrives: 3 },
-		result: { arrows: [[2, 'back'], [1, 'back']], arrives: 1 },
-		answer: { arrows: [[0, 'back']], arrives: 0 },
-	};
+	import { loopAt, nextStep } from '../lib/figures/agentLoop';
 
 	for (const figure of document.querySelectorAll<HTMLElement>('.loop')) {
-		const steps: Step[] = JSON.parse(figure.dataset.steps!);
+		// The `!` is safe: the markup above holds an element for every name asked for here.
 		const output = (name: string) => figure.querySelector<HTMLElement>(`[data-out="${name}"]`)!;
 		let current = 0;
 
 		const draw = () => {
 			for (const lit of figure.querySelectorAll('[data-active]')) lit.removeAttribute('data-active');
-			const step = steps[current - 1];
+			const { step, loops, route } = loopAt(current);
 			output('step').textContent = String(current);
-			output('loops').textContent = String(steps.slice(0, current).filter(({ kind }) => kind === 'result').length);
+			output('loops').textContent = String(loops);
 			output('kind').textContent = step?.kind ?? '';
 			output('text').textContent = step?.text ?? '';
-			if (!step) return;
+			if (!route) return;
 
-			const route = ROUTES[step.kind];
 			for (const [link, direction] of route.arrows) {
-				figure.querySelector(`[data-link="${link}"] .${direction}`)!.setAttribute('data-active', '');
+				figure.querySelector(`[data-link="${link}"] .${direction}`)?.setAttribute('data-active', '');
 			}
-			figure.querySelector(`[data-node="${route.arrives}"]`)!.setAttribute('data-active', '');
+			figure.querySelector(`[data-node="${route.arrives}"]`)?.setAttribute('data-active', '');
 		};
 
-		figure.querySelector('[data-step]')!.addEventListener('click', () => {
-			// Past the answer, the next press starts the exchange over.
-			current = current === steps.length ? 1 : current + 1;
+		figure.querySelector('[data-step]')?.addEventListener('click', () => {
+			current = nextStep(current);
 			draw();
 		});
-		figure.querySelector('[data-reset]')!.addEventListener('click', () => {
+		figure.querySelector('[data-reset]')?.addEventListener('click', () => {
 			current = 0;
 			draw();
 		});

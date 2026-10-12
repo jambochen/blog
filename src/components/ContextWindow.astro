@@ -1,17 +1,8 @@
 ---
-// Sizes are in thousands of tokens and only illustrative; what matters is their proportion to the window.
-const CAPACITY = 200;
-const SIZES = { chat: 3, file: 22, tool: 12 };
-// `fixed` blocks are written by the framework before the user says anything, and survive a new chat.
-const initial = [
-	{ type: 'system', size: 18, fixed: true },
-	{ type: 'rules', size: 6, fixed: true },
-	{ type: 'chat', size: SIZES.chat },
-	{ type: 'file', size: SIZES.file },
-	{ type: 'tool', size: SIZES.tool },
-	{ type: 'chat', size: SIZES.chat },
-];
-const used = initial.reduce((sum, block) => sum + block.size, 0);
+import { initialContext, usedPercent, widthPercent } from '../lib/figures/contextWindow';
+import FigureFrame from './FigureFrame.astro';
+
+const context = initialContext();
 const legend = [
 	['system', 'System'],
 	['rules', 'Rules'],
@@ -22,34 +13,27 @@ const legend = [
 ];
 ---
 
-<figure
+<FigureFrame
 	class="context"
-	data-capacity={CAPACITY}
-	aria-label="Context window: add messages, file reads and command output, and watch the fixed-size window fill up and get compacted"
+	label="Context window: add messages, file reads and command output, and watch the fixed-size window fill up and get compacted"
 >
 	<div class="actions">
-		<button type="button" data-add="chat" data-size={SIZES.chat}>+ Message</button>
-		<button type="button" data-add="file" data-size={SIZES.file}>+ Read file</button>
-		<button type="button" data-add="tool" data-size={SIZES.tool}>+ Run command</button>
+		<button type="button" data-add="chat">+ Message</button>
+		<button type="button" data-add="file">+ Read file</button>
+		<button type="button" data-add="tool">+ Run command</button>
 		<button type="button" data-reset>New chat</button>
 	</div>
 
 	<div class="window">
 		{
-			initial.map(({ type, size, fixed }) => (
-				<span
-					class="block"
-					data-type={type}
-					data-size={size}
-					data-fixed={fixed}
-					style={`width: ${(size / CAPACITY) * 100}%`}
-				/>
+			context.blocks.map((block) => (
+				<span class="block" data-type={block.type} data-id={block.id} style={`width: ${widthPercent(block)}%`} />
 			))
 		}
 	</div>
 
 	<p class="readout" aria-live="polite">
-		<strong data-out="used">{Math.round((used / CAPACITY) * 100)}%</strong>
+		<strong data-out="used">{usedPercent(context)}%</strong>
 		<span>compacted <output data-out="compactions">0</output>×</span>
 	</p>
 
@@ -63,38 +47,11 @@ const legend = [
 			))
 		}
 	</p>
-</figure>
+</FigureFrame>
 
 <style>
-	.context {
-		margin-inline: 0;
-		font-family: var(--font-ui), var(--font-gothic), sans-serif;
-		font-size: 0.9rem;
-		line-height: 1.5;
-	}
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-	}
-	.actions button {
-		padding: 0.3rem 0.75rem;
-		border: 1px solid var(--muted);
-		border-radius: 0;
-		background: none;
-		color: var(--ink);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
-	}
-	.actions button:hover {
-		border-color: var(--ink);
-		background: var(--surface);
-	}
 	.actions [data-reset] {
 		margin-left: auto;
-		color: var(--muted);
 	}
 	.window {
 		display: flex;
@@ -138,20 +95,9 @@ const legend = [
 		gap: 0.75rem;
 		margin: 0.5rem 0 0;
 		color: var(--muted);
-		font-variant-numeric: tabular-nums;
 	}
 	.readout strong {
 		min-width: 4ch;
-		color: var(--ink);
-		font-size: 2rem;
-		line-height: 1.2;
-		text-align: right;
-	}
-	.readout output {
-		display: inline-block;
-		min-width: 2ch;
-		color: var(--ink);
-		font-weight: 600;
 		text-align: right;
 	}
 	.readout [data-flash] {
@@ -182,90 +128,66 @@ const legend = [
 </style>
 
 <script>
-	interface Block {
-		type: string;
-		size: number;
-		fixed: boolean;
-		element: HTMLElement;
-	}
+	import { add, type Context, initialContext, newChat, SIZES, usedPercent, widthPercent } from '../lib/figures/contextWindow';
 
 	// Matches the width transition, after which a removed block leaves the DOM.
 	const LEAVE_MS = 300;
-	// Compaction summarises the chat only if dropping old tool output did not free enough.
-	const SUMMARISE_ABOVE = 0.3;
-	const SUMMARY_RATIO = 0.25;
 
 	for (const figure of document.querySelectorAll<HTMLElement>('.context')) {
-		const capacity = Number(figure.dataset.capacity);
+		// The `!` are safe: the markup above holds each of these elements.
 		const bar = figure.querySelector<HTMLElement>('.window')!;
 		const usedOutput = figure.querySelector<HTMLElement>('[data-out="used"]')!;
 		const compactionsOutput = figure.querySelector<HTMLElement>('[data-out="compactions"]')!;
-		const width = (size: number) => `${(size / capacity) * 100}%`;
 
-		let blocks: Block[] = [...bar.querySelectorAll<HTMLElement>('.block')].map((element) => ({
-			type: element.dataset.type!,
-			size: Number(element.dataset.size),
-			fixed: element.hasAttribute('data-fixed'),
-			element,
-		}));
-		let compactions = 0;
+		let context = initialContext();
+		const elements = new Map(
+			[...bar.querySelectorAll<HTMLElement>('.block')].map((element) => [Number(element.dataset.id), element]),
+		);
 
-		const total = () => blocks.reduce((sum, block) => sum + block.size, 0);
-
-		const create = (type: string, size: number, before: Element | null): Block => {
-			const element = document.createElement('span');
-			element.className = 'block';
-			element.dataset.type = type;
-			element.style.width = '0';
-			bar.insertBefore(element, before);
-			// Read the layout once so the browser animates from zero instead of starting at the final width.
-			element.getBoundingClientRect();
-			element.style.width = width(size);
-			return { type, size, fixed: false, element };
-		};
-
-		const drop = (doomed: Block[]) => {
-			blocks = blocks.filter((block) => !doomed.includes(block));
-			for (const { element } of doomed) {
+		const show = (next: Context) => {
+			const staying = new Set(next.blocks.map(({ id }) => id));
+			for (const [id, element] of elements) {
+				if (staying.has(id)) continue;
+				elements.delete(id);
 				element.style.width = '0';
 				setTimeout(() => element.remove(), LEAVE_MS);
 			}
-		};
 
-		const compact = () => {
-			const newest = blocks[blocks.length - 1];
-			drop(blocks.filter((block) => block !== newest && (block.type === 'file' || block.type === 'tool')));
+			let previous: HTMLElement | undefined;
+			next.blocks.forEach((block, index) => {
+				let element = elements.get(block.id);
+				if (!element) {
+					element = document.createElement('span');
+					element.className = 'block';
+					element.dataset.type = block.type;
+					element.style.width = '0';
+					// The newest block goes to the end, past the blocks still shrinking away; a summary takes
+					// the place of the chat it stands for, right after the blocks that stay in front of it.
+					const last = index === next.blocks.length - 1;
+					bar.insertBefore(element, last ? null : (previous?.nextSibling ?? bar.firstChild));
+					// Read the layout once so the browser animates from zero instead of starting at the final width.
+					element.getBoundingClientRect();
+					element.style.width = `${widthPercent(block)}%`;
+					elements.set(block.id, element);
+				}
+				previous = element;
+			});
 
-			if (total() > capacity * SUMMARISE_ABOVE) {
-				const talk = blocks.filter((block) => block !== newest && (block.type === 'chat' || block.type === 'summary'));
-				const size = talk.reduce((sum, block) => sum + block.size, 0) * SUMMARY_RATIO;
-				const firstLoose = blocks.find((block) => !block.fixed);
-				const summary = create('summary', size, firstLoose?.element ?? null);
-				blocks.splice(blocks.indexOf(firstLoose ?? newest), 0, summary);
-				drop(talk);
+			if (next.compactions > context.compactions) {
+				compactionsOutput.toggleAttribute('data-flash', true);
+				setTimeout(() => compactionsOutput.removeAttribute('data-flash'), 900);
 			}
-
-			compactions++;
-			compactionsOutput.toggleAttribute('data-flash', true);
-			setTimeout(() => compactionsOutput.removeAttribute('data-flash'), 900);
-		};
-
-		const report = () => {
-			usedOutput.textContent = `${Math.round((total() / capacity) * 100)}%`;
-			compactionsOutput.textContent = String(compactions);
+			usedOutput.textContent = `${usedPercent(next)}%`;
+			compactionsOutput.textContent = String(next.compactions);
+			context = next;
 		};
 
 		figure.addEventListener('click', (event) => {
 			const button = (event.target as Element).closest('button');
 			if (!button) return;
-			if (button.hasAttribute('data-reset')) {
-				drop(blocks.filter((block) => !block.fixed));
-				compactions = 0;
-			} else {
-				blocks.push(create(button.dataset.add!, Number(button.dataset.size), null));
-				if (total() > capacity) compact();
-			}
-			report();
+			const type = button.dataset.add;
+			if (button.hasAttribute('data-reset')) show(newChat(context));
+			else if (type && type in SIZES) show(add(context, type as keyof typeof SIZES));
 		});
 	}
 </script>

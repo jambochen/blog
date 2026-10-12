@@ -1,20 +1,19 @@
 ---
-const commits = ['clean', 'tidy', 'model', 'log', 'plot'];
-// The latest commit is left out of the choices: going back to it changes nothing.
-const choices = commits.slice(0, -1);
-const target = 1;
+import { CHOICES, COMMITS, INITIAL_TARGET, revertTo } from '../lib/figures/revertModes';
+import FigureFrame from './FigureFrame.astro';
+
+const { discard, keep, lost, added } = revertTo(INITIAL_TARGET);
 ---
 
-<figure
+<FigureFrame
 	class="revert"
-	data-commits={commits.join(',')}
-	aria-label="Two ways to go back to an earlier commit: discarding removes every commit after it, keeping adds one new commit with the old contents"
+	label="Two ways to go back to an earlier commit: discarding removes every commit after it, keeping adds one new commit with the old contents"
 >
 	<div class="actions">
 		<span class="prompt">Revert to</span>
 		{
-			choices.map((name, index) => (
-				<button type="button" data-target={index} aria-pressed={index === target}>
+			CHOICES.map((name, index) => (
+				<button type="button" data-target={index} aria-pressed={index === INITIAL_TARGET}>
 					{name}
 				</button>
 			))
@@ -23,11 +22,11 @@ const target = 1;
 
 	<div class="row" data-mode="discard">
 		<span class="name">Discard</span>
-		<span class="lost">lost <output data-out="discard">{commits.length - 1 - target}</output></span>
+		<span class="lost">lost <output data-out="discard">{lost}</output></span>
 		<ol class="history">
 			{
-				commits.map((name, index) => (
-					<li data-index={index} data-state={index === target ? 'target' : index > target ? 'lost' : undefined}>
+				COMMITS.map((name, index) => (
+					<li data-index={index} data-state={discard[index]}>
 						{name}
 					</li>
 				))
@@ -40,53 +39,21 @@ const target = 1;
 		<span class="lost">lost <output>0</output></span>
 		<ol class="history">
 			{
-				commits.map((name, index) => (
-					<li data-index={index} data-state={index === target ? 'target' : undefined}>
+				COMMITS.map((name, index) => (
+					<li data-index={index} data-state={keep[index]}>
 						{name}
 					</li>
 				))
 			}
-			<li data-state="added" data-out="added">= {commits[target]}</li>
+			<li data-state="added" data-out="added">{added}</li>
 		</ol>
 	</div>
-</figure>
+</FigureFrame>
 
 <style>
-	.revert {
-		margin-inline: 0;
-		font-family: var(--font-ui), var(--font-gothic), sans-serif;
-		font-size: 0.9rem;
-		line-height: 1.5;
-	}
-	.actions {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
-	}
 	.prompt {
 		margin-right: 0.25rem;
 		color: var(--muted);
-	}
-	.actions button {
-		padding: 0.3rem 0.75rem;
-		border: 1px solid var(--muted);
-		border-radius: 0;
-		background: none;
-		color: var(--ink);
-		font: inherit;
-		font-weight: 600;
-		cursor: pointer;
-	}
-	.actions button:hover {
-		border-color: var(--ink);
-		background: var(--surface);
-	}
-	.actions button[aria-pressed='true'] {
-		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
-		color: var(--accent);
 	}
 	.row {
 		display: grid;
@@ -94,20 +61,8 @@ const target = 1;
 		gap: 0.4rem 1rem;
 		margin-top: 1.25rem;
 	}
-	.name {
-		font-weight: 600;
-	}
 	.lost {
 		color: var(--muted);
-		font-variant-numeric: tabular-nums;
-	}
-	/* Fixed-width, right-aligned numbers, so nothing shifts as a value changes. */
-	output {
-		display: inline-block;
-		min-width: 2ch;
-		color: var(--ink);
-		font-weight: 600;
-		text-align: right;
 	}
 	.history {
 		grid-column: 1 / -1;
@@ -149,7 +104,7 @@ const target = 1;
 	}
 	.history [data-state='target'] {
 		border-color: var(--accent);
-		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		background: var(--tint-accent);
 		color: var(--accent);
 	}
 	.history [data-state='lost'] {
@@ -186,25 +141,27 @@ const target = 1;
 </style>
 
 <script>
+	import { revertTo } from '../lib/figures/revertModes';
+
 	for (const figure of document.querySelectorAll<HTMLElement>('.revert')) {
-		const commits = figure.dataset.commits!.split(',');
 		const buttons = [...figure.querySelectorAll<HTMLButtonElement>('[data-target]')];
+		// The `!` are safe: the markup above holds both elements.
 		const added = figure.querySelector<HTMLElement>('[data-out="added"]')!;
 		const lost = figure.querySelector<HTMLElement>('[data-out="discard"]')!;
 
 		const choose = (target: number) => {
+			const view = revertTo(target);
 			for (const button of buttons) {
 				button.setAttribute('aria-pressed', String(Number(button.dataset.target) === target));
 			}
 			for (const item of figure.querySelectorAll<HTMLElement>('[data-index]')) {
-				const index = Number(item.dataset.index);
-				const discarding = item.closest('[data-mode]')!.getAttribute('data-mode') === 'discard';
-				if (index === target) item.dataset.state = 'target';
-				else if (discarding && index > target) item.dataset.state = 'lost';
+				const states = item.closest('[data-mode="discard"]') ? view.discard : view.keep;
+				const state = states[Number(item.dataset.index)];
+				if (state) item.dataset.state = state;
 				else item.removeAttribute('data-state');
 			}
-			lost.textContent = String(commits.length - 1 - target);
-			added.textContent = `= ${commits[target]}`;
+			lost.textContent = String(view.lost);
+			added.textContent = view.added;
 			// Detaching the attribute first restarts the entrance animation on every choice.
 			added.removeAttribute('data-fresh');
 			added.getBoundingClientRect();
