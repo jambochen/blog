@@ -9,7 +9,7 @@ seriesOrder: 3
 
 ## Prompt 的由來
 
-[[LLM 與 agent 的運作原理]]一篇已說明，LLM 所做的事是讀進一段文字，再接著往下寫，讀進去的這段文字便稱為 prompt。Prompt 在英文裡是提詞的意思，劇場裡替忘詞的演員提一句開頭，演員便能接著演下去。LLM 最初的用法正是如此，使用者寫下一段開頭，由它續寫或補完。對話是其後才有的形態，做法是將雙方說過的話排成一份標明誰說了什麼的紀錄，交給 LLM 續寫下一句回答，本質上仍是續寫，prompt 一詞也就沿用了下來。
+[[LLM 與 agent 的運作原理#基本原理]]一節已說明，LLM 所做的事是讀進一段文字，再接著往下寫，讀進去的這段文字便稱為 prompt。Prompt 在英文裡是提詞的意思，劇場裡替忘詞的演員提一句開頭，演員便能接著演下去。LLM 最初的用法正是如此，使用者寫下一段開頭，由它續寫或補完。對話是其後才有的形態，做法是將雙方說過的話排成一份標明誰說了什麼的紀錄，交給 LLM 續寫下一句回答，本質上仍是續寫，prompt 一詞也就沿用了下來。
 
 本篇寫 prompt 時，指的是使用者自己寫的這一部分；讀官方文件與網路文章時會遇到的其他叫法，見[[#Prompt 的別名]]一節。
 
@@ -140,7 +140,7 @@ Agent 改完之後，另開一個新對話審查，不要在原對話裡請它�
 
 ### 進度寫成檔案
 
-每個新對話都由空白開始，自動帶過去的只有規範檔與 agent 自己寫成檔案的記憶（見[[LLM 與 agent 的運作原理]]一篇），而記憶存不存、存什麼由 agent 決定，Codex 更是預設關閉，不能指望。一件事一次做不完時，結束前請它寫一份交接筆記，下一次對話先讀這一份：
+每個新對話都由空白開始，自動帶過去的只有規範檔與 agent 自己寫成檔案的記憶（見[[LLM 與 agent 的運作原理#Context window]]一節），而記憶存不存、存什麼由 agent 決定，Codex 更是預設關閉，不能指望。一件事一次做不完時，結束前請它寫一份交接筆記，下一次對話先讀這一份：
 
 ```text
 把目前的進度寫成 docs/progress.md：目標、已完成的部分、已排除的做法與原因、
@@ -219,7 +219,7 @@ Prompt 也可以請它代寫。把零散的想法、要求與先前試過不行�
 整理成一份給新對話用的 prompt，存成 docs/prompt.md。不確定我要什麼的地方先問我。
 ```
 
-反覆使用的 prompt 存成檔案，便是規範檔與 skill 的由來。[[規範檔與 skill]]一篇的規範檔即由 agent 起草，不少 skill 也是這樣寫成的，Anthropic 並提供專門代寫 skill 的[工具](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/skill-creator)。
+反覆使用的 prompt 存成檔案，便是規範檔與 skill 的由來。[[規範檔與 skill#由 agent 起草初版|規範檔與 skill]]一篇的規範檔即由 agent 起草，不少 skill 也是這樣寫成的，Anthropic 並提供專門代寫 skill 的[工具](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/skill-creator)。
 
 ## 多模態輸入與文字優先
 
@@ -260,6 +260,6 @@ CS 習慣替同一件事取好幾個名字，prompt 尤其如此，同一份文�
 - 使用者送出的那段話：prompt、user message，中文有提示詞、指令、指示，指的都是同一件事。
 - 框架先寫上的那一段：system prompt、instructions，ChatGPT 與 Codex 的 custom instructions 也屬此類。Anthropic 的文件多稱 system prompt，OpenAI 的[文件](https://developers.openai.com/api/docs/guides/text)則寫 instructions。
 - 寫 prompt 這件事：prompt engineering（提示工程）。
-- LLM 每次讀進的全部文字：context，即[[LLM 與 agent 的運作原理]]一篇所說白板上的所有內容。
+- LLM 每次讀進的全部文字：context，即[[LLM 與 agent 的運作原理#Context window]]一節所說白板上的所有內容。
 
 Prompt 一詞本身也有兩種用法，狹義只指使用者送出的那段話，廣義則連框架先寫上的部分一併算入，讀到時須依上下文判斷。

@@ -9,7 +9,7 @@ seriesOrder: 5
 
 ## 規範檔的作用與位置
 
-規範檔是一份 Markdown 檔，放在專案的根目錄，即[[離開網頁對話]]一篇以 Select folder 選取的那個資料夾之下。每個對話開始時，規範檔的內容會自動載入 context window，效果等同於每次對話開頭先替使用者把這些話講過一遍。規範檔的效力以這個資料夾為界，資料夾如果裝著數份無關的工作，同一份規矩便套用於全部。
+規範檔是一份 Markdown 檔，放在專案的根目錄，即[[離開網頁對話#初次使用：讀取既有資料夾]]一節以 Select folder 選取的那個資料夾之下。每個對話開始時，規範檔的內容會自動載入 context window，效果等同於每次對話開頭先替使用者把這些話講過一遍。規範檔的效力以這個資料夾為界，資料夾如果裝著數份無關的工作，同一份規矩便套用於全部。
 
 檔名依工具而定，常見的有兩個。`AGENTS.md` 是多家 coding agent 共用的檔名，Codex 讀的即是這一份，見[官方說明](https://developers.openai.com/codex/guides/agents-md)；Claude 則另用 `CLAUDE.md`（放在專案的 `.claude` 資料夾內也可以），見[官方文件](https://code.claude.com/docs/en/memory)。兩者只是檔名不同，內容的寫法與作用並無差別，本篇以下所述對兩者都適用。
 
@@ -17,9 +17,9 @@ seriesOrder: 5
 
 另有一份使用者層級的規範檔，對電腦上所有專案都生效，適合放置與專案無關的個人習慣，例如一律以繁體中文回覆。這一份放在使用者資料夾之下，Windows 上的使用者資料夾即 `C:\Users\使用者名稱`，Claude 的規範檔是其中的 `.claude\CLAUDE.md`，Codex 的是 `.codex\AGENTS.md`。官方文件以 macOS 與 Linux 的寫法為準，寫作 `~/.claude/CLAUDE.md` 與 `~/.codex/AGENTS.md`，開頭的 `~` 指的就是使用者資料夾。初期只寫專案的那一份即可。
 
-規範檔會佔用 context window。以[[LLM 與 agent 的運作原理]]一篇的白板來說，規範檔在每次對話開始前便已寫在板上，寫得愈長，留給實際工作的空間便愈少，agent 遵守的程度也隨之下降；Anthropic 建議每份控制在 200 行以內，並指出指示愈具體、愈簡短，agent 愈能一致地遵守。「圖要好看」這類寫法幾乎無用，「圖一律存成 PNG，寬 8 吋、高 5 吋，放在 `output/figures`」則可以照辦。
+規範檔會佔用 context window。以[[LLM 與 agent 的運作原理#Context window]]一節的白板來說，規範檔在每次對話開始前便已寫在板上，寫得愈長，留給實際工作的空間便愈少，agent 遵守的程度也隨之下降；Anthropic 建議每份控制在 200 行以內，並指出指示愈具體、愈簡短，agent 愈能一致地遵守。「圖要好看」這類寫法幾乎無用，「圖一律存成 PNG，寬 8 吋、高 5 吋，放在 `output/figures`」則可以照辦。
 
-規範檔是 context，不具強制力。對 agent 而言，規範檔的內容是一段每次都會讀到的指示，agent 多數時候會遵守，但沒有機制保證，對話一長也可能遺忘，就像考卷開頭的作答說明，沒有人逐題檢查考生是否照做。此為[[LLM 與 agent 的運作原理]]一篇所述 LLM 的性質，因此規範檔不能取代[[離開網頁對話]]一篇的權限提示，寫了「原始資料不可修改」，看到 agent 要改原始資料時仍須按下 Reject。
+規範檔是 context，不具強制力。對 agent 而言，規範檔的內容是一段每次都會讀到的指示，agent 多數時候會遵守，但沒有機制保證，對話一長也可能遺忘，就像考卷開頭的作答說明，沒有人逐題檢查考生是否照做。此為[[LLM 與 agent 的運作原理#Context window]]一節所述 LLM 的性質，因此規範檔不能取代[[離開網頁對話#權限提示與 plan mode|離開網頁對話]]一篇的權限提示，寫了「原始資料不可修改」，看到 agent 要改原始資料時仍須按下 Reject。
 
 ## 由 agent 起草初版
 
@@ -110,7 +110,7 @@ improve-codebase-architecture、codebase-design
 這幾個 skill 下載並安裝到 .agents/skills。
 ```
 
-清單是後文試用的幾個 skill，另加[[整理專案]]一篇會用到的 `improve-codebase-architecture`。其中 `domain-modeling`、`writing-for-agents` 與 `codebase-design` 不必直接喚用，`grill-with-docs`、`retro` 與 `improve-codebase-architecture` 會各自載入它們，缺了便無法運作。過程中會出現兩次核准提示，一次是連網，一次是寫入專案資料夾以外的位置，都是[[離開網頁對話]]一篇所述沙盒的正常反應。兩個做法擇一即可。
+清單是後文試用的幾個 skill，另加[[整理專案#函數與分檔]]一節會用到的 `improve-codebase-architecture`。其中 `domain-modeling`、`writing-for-agents` 與 `codebase-design` 不必直接喚用，`grill-with-docs`、`retro` 與 `improve-codebase-architecture` 會各自載入它們，缺了便無法運作。過程中會出現兩次核准提示，一次是連網，一次是寫入專案資料夾以外的位置，都是[[離開網頁對話#權限提示與 plan mode]]一節所述沙盒的正常反應。兩個做法擇一即可。
 
 Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 marketplace 的頁面裡點擊使用，無法打字喚用。
 
@@ -168,7 +168,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 
 ### `caveman`
 
-[`caveman`](https://github.com/JuliusBrussee/caveman) 是專為節省用量而寫的 skill，作用是讓 agent 以極簡的句子回覆，省去客套與重複的說明，技術內容不變。[[LLM 與 agent 的運作原理]]一篇提過，LLM 讀進的與生成的 token 都計入用量；`caveman` 減少的是 agent 輸出的文字，對於讀檔與工具輸出所佔的用量沒有影響，因此節省的幅度視工作的性質而定，對話多而讀檔少時較為明顯。
+[`caveman`](https://github.com/JuliusBrussee/caveman) 是專為節省用量而寫的 skill，作用是讓 agent 以極簡的句子回覆，省去客套與重複的說明，技術內容不變。[[LLM 與 agent 的運作原理#基本原理]]一節提過，LLM 讀進的與生成的 token 都計入用量；`caveman` 減少的是 agent 輸出的文字，對於讀檔與工具輸出所佔的用量沒有影響，因此節省的幅度視工作的性質而定，對話多而讀檔少時較為明顯。
 
 安裝的兩行指令已見前文。裝好之後在對話框輸入 `/caveman` 即啟用，此後整個對話的回覆都維持極簡，直到輸入 `/caveman off` 或直接說「stop caveman」為止，`/caveman status` 可查看目前是否啟用。另有兩個更省的級別，`/ultracave` 的句子更短，`/megacave` 改以文言文回覆，一般用 `/caveman` 即可。精簡的只是句子：code、指令、路徑、數字與錯誤訊息照原樣輸出，回覆的語言不變，遇到安全警告、無法復原的操作這類須講清楚的情況，則暫時改回完整的句子。
 

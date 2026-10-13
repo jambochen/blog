@@ -17,7 +17,7 @@ VS Code 是 Microsoft 的免費編輯器，也是目前使用最廣的一個，S
 
 自[官方網站](https://code.visualstudio.com/)下載 Windows 版安裝程式，選項大致維持預設，只在 Select Additional Tasks 一頁多勾一項 Add "Open with Code" action to Windows Explorer directory context menu。勾選之後，於檔案總管對資料夾按右鍵即可用 VS Code 開啟它。
 
-VS Code 沒有專案檔，開啟一個資料夾即是開啟專案，由 File 選單的 Open Folder 選取先前交給 agent 的那個資料夾，或於檔案總管對該資料夾按右鍵選 Open with Code。開啟的須是專案資料夾本身，不是其上一層裝著數個專案的資料夾，原因見[[整理專案]]一篇。初次開啟某個資料夾時會詢問是否信任其中的檔案，自己的專案選擇信任即可；如果選擇不信任，VS Code 會進入 Restricted Mode，Claude Code 擴充套件在此模式下無法運作。
+VS Code 沒有專案檔，開啟一個資料夾即是開啟專案，由 File 選單的 Open Folder 選取先前交給 agent 的那個資料夾，或於檔案總管對該資料夾按右鍵選 Open with Code。開啟的須是專案資料夾本身，不是其上一層裝著數個專案的資料夾，原因見[[整理專案#一份工作一個資料夾]]一節。初次開啟某個資料夾時會詢問是否信任其中的檔案，自己的專案選擇信任即可；如果選擇不信任，VS Code 會進入 Restricted Mode，Claude Code 擴充套件在此模式下無法運作。
 
 視窗分為幾區，各區的名稱於[官方說明](https://code.visualstudio.com/docs/editing/getting-started/userinterface)有圖示。中央是 Editor，即編輯區，可左右並排數個檔案。最左側一排圖示稱為 Activity Bar，點選後於旁邊的 Primary Side Bar 展開對應的檢視，第一個圖示是 Explorer，列出專案資料夾內的檔案。編輯區下方是 Panel，其中的 Terminal 用來執行指令；最下方一列為 Status Bar。
 
@@ -49,9 +49,9 @@ VS Code 本體的功能不多，開檔、編輯、搜尋、終端機與 Git 之�
 
 依官方文件，新版擴充套件的權限模式預設以 Auto 開始，此模式下 agent 改檔之前不會先顯示對照，如果要逐一核准，須自行切回 Manual。
 
-對話框的用法與桌面 app 相仿。權限模式的切換位於對話框下緣的模式指示上，選項為 Manual、Plan、Edit automatically 與 Auto。Manual、Plan、Auto 與[[離開網頁對話]]一篇所述相同；Edit automatically 即修改檔案不再詢問，相當於桌面 app 的 Accept edits。Plan 模式在此處多了一項方便，計畫會以一份 Markdown 文件開在編輯區，可以直接在上面加註意見，再交還 agent。
+對話框的用法與桌面 app 相仿。權限模式的切換位於對話框下緣的模式指示上，選項為 Manual、Plan、Edit automatically 與 Auto。Manual、Plan、Auto 與[[離開網頁對話#權限提示與 plan mode]]一節所述相同；Edit automatically 即修改檔案不再詢問，相當於桌面 app 的 Accept edits。Plan 模式在此處多了一項方便，計畫會以一份 Markdown 文件開在編輯區，可以直接在上面加註意見，再交還 agent。
 
-[[規範檔與 skill]]一篇寫的 `CLAUDE.md` 在此同樣生效，因為它放在專案資料夾內，跟著資料夾走，與使用哪一個介面無關。Skill 的管理則是在對話框輸入 `/plugins`（比桌面 app 的 `/plugin` 多一個 s），開啟名為 Manage plugins 的圖形介面，其中 Plugins 分頁列出已安裝的項目並可搜尋安裝新的，Marketplaces 分頁用來新增來源。
+專案裡的規範檔 `CLAUDE.md`（寫給 agent 讀的規矩，見[[規範檔與 skill#規範檔的作用與位置]]一節）在此同樣生效，因為它放在專案資料夾內，跟著資料夾走，與使用哪一個介面無關。Skill 的管理則是在對話框輸入 `/plugins`（比桌面 app 的 `/plugin` 多一個 s），開啟名為 Manage plugins 的圖形介面，其中 Plugins 分頁列出已安裝的項目並可搜尋安裝新的，Marketplaces 分頁用來新增來源。
 
 與編輯器同在一個視窗還有一項好處，agent 會自動看到編輯區內選取的文字。於某支腳本內選取數行，再到對話框提問，不必說明是哪個檔案的哪幾行；按 `Alt+K` 則會把檔名與行號以 `@` 的形式插入對話框，可確認它指向何處。
 
@@ -59,7 +59,7 @@ VS Code 本體的功能不多，開檔、編輯、搜尋、終端機與 Git 之�
 
 Manual 模式下，agent 每次要改檔都先開啟這份對照並等待決定，可以接受、拒絕，或在對話框告訴它應該怎麼改。除了整份接受或拒絕之外，另有較細的做法。對照之中每一處改動底下都有 Accept this change 與 Reject this change 兩個按鈕，可以只留下其中幾處；單一檔案的改動超過 100 處時，這組按鈕不會出現，只能整份決定。也可直接在對照裡修改 agent 提議的內容再接受，agent 會被告知內容經過修改，不至於誤以為檔案與它原先提議的相同。
 
-看對照的原則與[[離開網頁對話]]一篇相同，先看改的是哪個檔案、範圍是否與所交代的相稱。差別在於此處看得見上下文，例如交代「把圖的配色改掉」，對照裡卻出現讀取資料或篩選樣本的那幾行，一眼即可發現，此時拒絕該處並詢問原因。
+看對照的原則與[[離開網頁對話#權限提示與 plan mode]]一節相同，先看改的是哪個檔案、範圍是否與所交代的相稱。差別在於此處看得見上下文，例如交代「把圖的配色改掉」，對照裡卻出現讀取資料或篩選樣本的那幾行，一眼即可發現，此時拒絕該處並詢問原因。
 
 擴充套件也支援 checkpoint。滑鼠移到對話中任何一則訊息上，會出現 rewind 按鈕，按下後有三個選項：
 
@@ -69,13 +69,13 @@ Manual 模式下，agent 每次要改檔都先開啟這份對照並等待決定�
 | Rewind code to here | 把檔案退回這則訊息當時的狀態，對話紀錄保留 |
 | Fork conversation and rewind code | 另起一段對話，同時把檔案退回當時的狀態 |
 
-Rewind 能退回什麼、救不回什麼，[[版本控制]]一篇已經說明，此處不再重複；它適合用於剛發生的幾步改動，跨越數日的退回仍靠提交。
+Rewind 能退回什麼、救不回什麼，[[版本控制#Rewind 的能力與局限]]一節已經說明，此處不再重複；它適合用於剛發生的幾步改動，跨越數日的退回仍靠提交。
 
 Codex 也有 [VS Code 擴充套件](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt)，於 Extensions 檢視搜尋 Codex 也可找到，發行者為 OpenAI，以 ChatGPT 帳號登入，同樣讀取專案內的 `AGENTS.md`，見 [OpenAI 的說明](https://learn.chatgpt.com/docs/codex/ide)。
 
 ## Git 介面
 
-[[版本控制]]一篇以來，提交都由 agent 代為進行，使用者所知的只有它的回報。VS Code 內建的 Source Control 檢視可以直接看到這些提交，位於 Activity Bar，快捷鍵為 `Ctrl+Shift+G`。它使用的是[[版本控制]]一篇安裝的 Git for Windows，不需另外設定。介面上寫的 commit 即是提交。
+提交如果都由 agent 代為進行，使用者所知的便只有它的回報。VS Code 內建的 Source Control 檢視可以直接看到這些提交，位於 Activity Bar，快捷鍵為 `Ctrl+Shift+G`。它使用的是電腦上已安裝的 Git for Windows，安裝方式見[[版本控制#安裝 Git for Windows]]一節，不需另外設定。介面上寫的 commit 即是提交。
 
 自上一次提交以來改了什麼，看上方的 Changes 清單。其中列出所有已改動而尚未提交的檔案，點選任一個即開啟差異檢視，左為上一次提交當時的內容，右為目前的內容。Agent 以 Edit automatically 或 Auto 模式連續改了數個檔案之後，在此處可以一次看完它動過哪些地方，再決定要不要提交。
 
@@ -101,7 +101,7 @@ VS Code 對各種語言的支援同樣來自擴充套件，語法標色、自動
 
 這些擴充套件是給使用者自己用的，agent 並不依賴它們。Agent 執行 code 靠的是指令，沒有裝任何語言的擴充套件，它照樣能執行腳本並回報結果；裝了之後，使用者才能在編輯區裡自己執行、自己看圖與資料。
 
-反過來說，擴充套件找得到語言的執行檔，也不代表 agent 找得到，Windows 上的 R 即是一例，原因見[[整理專案]]一篇「相對路徑」。遇到時請 agent 找出安裝位置，並把完整路徑記進規範檔：
+反過來說，擴充套件找得到語言的執行檔，也不代表 agent 找得到，Windows 上的 R 即是一例，原因見[[整理專案#相對路徑]]一節。遇到時請 agent 找出安裝位置，並把完整路徑記進規範檔：
 
 ```text
 剛才找不到 Rscript。請找出這台電腦上 R 的安裝位置，之後一律用完整路徑執行 Rscript，並把這個路徑寫進規範檔。
