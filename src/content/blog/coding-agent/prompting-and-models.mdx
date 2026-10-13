@@ -5,22 +5,13 @@ pubDate: '2026-10-10'
 seriesOrder: 3
 ---
 
-模型愈來愈強，以往須用上許多技巧才做得好的事，如今一句話便能做到，許多人也因此不再重視下指令的方式。指令寫得粗略仍做得成，是因爲模型力大磚飛；但模型的進步同時提高了下限與上限，需求寫得愈準確，結果才愈接近上限。
+模型愈來愈強，以往須用上許多技巧才做得好的事，如今一句話便能做到，許多人也因此不再重視下指令的方式。指令寫得粗略仍做得成，是因為模型力大磚飛；但模型的進步同時提高了下限與上限，需求寫得愈準確，結果才愈接近上限。
 
-## Prompt 與它的別名
+## Prompt 的由來
 
 [[LLM 與 agent 的運作原理]]一篇已說明，LLM 所做的事是讀進一段文字，再接著往下寫，讀進去的這段文字便稱為 prompt。Prompt 在英文裡是提詞的意思，劇場裡替忘詞的演員提一句開頭，演員便能接著演下去。LLM 最初的用法正是如此，使用者寫下一段開頭，由它續寫或補完。對話是其後才有的形態，做法是將雙方說過的話排成一份標明誰說了什麼的紀錄，交給 LLM 續寫下一句回答，本質上仍是續寫，prompt 一詞也就沿用了下來。
 
-CS 習慣替同一件事取好幾個名字，prompt 尤其如此，同一份文件裡前後換用兩三個詞也很常見。讀官方文件與網路文章時會遇到的叫法，依所指的東西整理如下：
-
-- 使用者送出的那段話：prompt、user prompt、user message、query、input，中文有提示詞、指令、指示，網路上也戲稱咒語，指的都是同一件事。
-- 框架先寫上的那一段：system prompt、system message、developer message、instructions，ChatGPT 與 Codex 的 custom instructions 也屬此類。Anthropic 的文件多稱 system prompt，OpenAI 的[文件](https://developers.openai.com/api/docs/guides/text)則寫 developer message 或 instructions。
-- 寫 prompt 這件事：prompting、prompt engineering（提示工程）。兩家指南的標題 Prompting best practices 與 Prompt guidance 即由此而來，後文的 meta-prompting 則是請 LLM 代寫 prompt。
-- LLM 每次讀進的全部文字：context，即[[LLM 與 agent 的運作原理]]一篇所說白板上的所有內容。
-
-Prompt 一詞本身也有兩種用法，狹義只指使用者送出的那段話，廣義則連框架先寫上的部分一併算入，讀到時須依上下文判斷。
-
-本篇其後一律寫 prompt，指的是使用者自己寫的這一部分。
+本篇寫 prompt 時，指的是使用者自己寫的這一部分；讀官方文件與網路文章時會遇到的其他叫法，見[[#Prompt 的別名]]一節。
 
 ## Prompt 技巧與協作的做法
 
@@ -33,7 +24,7 @@ Anthropic 與 OpenAI 各有寫給開發者與使用者的指南，說明如何�
 
 網路上流傳的技巧有兩類本篇不收。一類是給小費、威脅、刻意客氣與全大寫的加重語氣，不收的原因是沒有可靠的效果：前三者經 Wharton 的實測（[客氣](https://arxiv.org/abs/2503.04818)、[小費與威脅](https://arxiv.org/abs/2508.00614)），整體都沒有可靠的效果，個別題目時好時壞，事先無法得知；全大寫的加重語氣，Anthropic 的[指南](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)也建議改回平常的說法。
 
-另一類是要它「一步一步想」，不收的原因是模型已內建這個做法。這個做法稱為 chain of thought（CoT），出自 2022 年的[一篇論文](https://arxiv.org/abs/2201.11903)：在 prompt 裡附上幾個寫出推理過程的範例，模型便會照樣先推理再作答，數學應用題的正確率因而明顯提高。同年的[另一篇論文](https://arxiv.org/abs/2205.11916)發現連範例也不必給，只在 prompt 末尾加上 Let's think step by step，當時的模型在一組算術題上的正確率便由 17.7% 升至 78.7%。其後的模型已將這個做法學了進去，許多更內建了思考模式，回答之前本來就會先推理，等於每一則 prompt 都已帶著這句話，再寫一次只是重複。Wharton 的[實測](https://arxiv.org/abs/2506.07142)也發現，在這類模型上加這句話，正確率幾乎沒有提高，卻明顯更慢、更耗 token。
+另一類是要它「一步一步想」，不收的原因是模型已內建這個做法。這個做法稱為 chain of thought（CoT），出自 2022 年的[一篇論文](https://arxiv.org/abs/2201.11903)：在 prompt 裡附上幾個寫出推理過程的範例，模型便會照樣先推理再作答，數學應用題的正確率因而明顯提高。同年的[另一篇論文](https://arxiv.org/abs/2205.11916)發現連範例也不必給，只在 prompt 末尾加上 Let's think step by step，當時的模型在一組算術題上的正確率便由 17.7% 升至 78.7%。其後的模型已將這個做法學了進去，許多更內建了思考模式，回答之前本來就會先推理，等於每一則 prompt 都已帶著這句話，再寫一次只是重複；推理多少則由 effort 決定，見[[#模型規模與 effort]]一節。Wharton 的[實測](https://arxiv.org/abs/2506.07142)也發現，在這類模型上加這句話，正確率幾乎沒有提高，卻明顯更慢、更耗 token。
 
 ### 寫明要什麼樣的產出
 
@@ -99,7 +90,7 @@ Anthropic 的指南建議，同一個問題糾正超過兩次便開新對話。�
 直接用 as.Date() 會把民國年變成缺失值，不要這樣做。
 ```
 
-我個人重開時，也會一併換成更大一級的模型。糾正兩次仍做不對，原因未必只在舊對話，也可能是這件事超出了目前模型的能力，換上較大的模型再試，往往一次便過。
+我個人重開時，也會一併換成更大一級的模型，分級見[[#模型規模與 effort]]一節。糾正兩次仍做不對，原因未必只在舊對話，也可能是這件事超出了目前模型的能力，換上較大的模型再試，往往一次便過。
 
 ### 另開新對話審查
 
@@ -149,7 +140,7 @@ Agent 改完之後，另開一個新對話審查，不要在原對話裡請它�
 
 ### 進度寫成檔案
 
-每個新對話都由空白開始，自動帶過去的只有規範檔與 agent 自己記下的記憶，而記憶存不存、存什麼由 agent 決定，Codex 更是預設關閉，不能指望。一件事一次做不完時，結束前請它寫一份交接筆記，下一次對話先讀這一份：
+每個新對話都由空白開始，自動帶過去的只有規範檔與 agent 自己寫成檔案的記憶（見[[LLM 與 agent 的運作原理]]一篇），而記憶存不存、存什麼由 agent 決定，Codex 更是預設關閉，不能指望。一件事一次做不完時，結束前請它寫一份交接筆記，下一次對話先讀這一份：
 
 ```text
 把目前的進度寫成 docs/progress.md：目標、已完成的部分、已排除的做法與原因、
@@ -170,7 +161,7 @@ Anthropic 的指南舉的例子是「絕不使用刪節號」不如寫成「回�
 
 ### 附上範例
 
-Anthropic 的指南指出範例是引導輸出的格式、語氣與結構最可靠的方式之一，並建議範例貼近實際用途、彼此有所變化，以免模型把無關的共同點也學了去，數量建議三至五個，並以 `<example>` 標籤包起來，與 prompt 本身區隔。要求 agent 依某種樣式寫東西時，與其描述樣式，不如直接給它看，此處為省篇幅只列一個：
+Anthropic 的指南指出範例是引導輸出的格式、語氣與結構最可靠的方式之一，並建議範例貼近實際用途、彼此有所變化，以免模型把無關的共同點也學了去，數量建議三至五個，並以 `<example>` 與 `</example>` 這一對標籤包起來，標籤標出範例的起訖，模型便分得出哪一段是範例、哪一段是 prompt 本身。要求 agent 依某種樣式寫東西時，與其描述樣式，不如直接給它看，此處為省篇幅只列一個：
 
 ```text
 替 R/ 資料夾裡的每個函數補上說明註解，格式照下面的範例：
@@ -202,7 +193,7 @@ Agent 改完之後顯示的是逐行的對照，不熟悉 code 的人未必看�
 
 ### 將互不相干的工作分給 subagent
 
-Agent 在對話中可以另外啟動一個 agent，稱為 subagent。它有自己的 context window，過程都留在那裡，做完後只把結論交回主對話（[Claude](https://code.claude.com/docs/en/sub-agents)、[Codex](https://learn.chatgpt.com/docs/agent-configuration/subagents.md)）。適合交給它的是彼此不相干、過程又冗長的工作，例如翻遍數十個檔案才能回答的問題、由幾個方向尋找論文、執行測試並讀完整份輸出。Subagent 可以同時啟動數個，各做一個方向，主對話只多出幾段結論。
+Agent 在對話中可以另外啟動一個 agent，稱為 subagent。它有自己的 context window，過程都留在那裡，做完後只把結論交回主對話（[Claude](https://code.claude.com/docs/en/sub-agents)、[Codex](https://learn.chatgpt.com/docs/agent-configuration/subagents.md)）。適合交給它的是彼此不相干、過程又冗長的工作，例如翻遍數十個檔案才能回答的問題、由幾個方向尋找論文、重新執行全部腳本並讀完整份輸出。Subagent 可以同時啟動數個，各做一個方向，主對話只多出幾段結論。
 
 Claude 會依任務自行決定是否啟動 subagent，使用者不必開口；桌面 app 的 tasks 窗格會列出執行中的 subagent，點選即可查看它的輸出或將它停止。Codex 則須在 prompt 裡明說才會啟動。兩者都可以直接指名，並寫明各做什麼、回報什麼：
 
@@ -211,7 +202,7 @@ Claude 會依任務自行決定是否啟動 subagent，使用者不必開口；�
 公開的實作。每個回報五篇以內，附標題、年份、連結與一句摘要，找不到便說找不到。
 ```
 
-文獻同樣可能是編造的，連結須自己點開確認。測試也是同樣的寫法，例如改完 code 之後，請一個 subagent 重新執行全部腳本，比對輸出與改動之前是否相同，只回報不同之處。
+文獻同樣可能是編造的，連結須自己點開確認。驗證也是同樣的寫法，例如改完 code 之後，請一個 subagent 重新執行全部腳本，比對輸出與改動之前是否相同，只回報不同之處。
 
 Subagent 讀到的 prompt 是主對話的 agent 依使用者的話另寫的，並非原文，細節可能在轉述時遺漏。條件較多時，可要求將 prompt 原樣轉交，不要改寫。
 
@@ -261,3 +252,14 @@ Prompt 也可以請它代寫。把零散的想法、要求與先前試過不行�
 Effort 是另一個獨立的旋鈕，決定同一個模型在回答前花多少工夫推理。Claude 分為 low、medium、high、xhigh、max 五級，Opus 5.5、Sonnet 5.5 與 Haiku 5.5 的預設都是 medium；Codex 則由 Light 起，經 Medium、High、Extra High、Max 至 Ultra。Codex 的 effort 與模型在同一個切換器裡調整。
 
 模型與 effort 都不是愈大愈好。較大的模型與較高的 effort 會多讀檔案、多做檢查，對於改一個圖例、重新命名幾個欄位這類範圍明確的小事，只是更慢、更耗用量，結果沒有分別；Anthropic 的文件也提到，Opus 5.5 在 medium 的表現已相當於前一代在 high 的表現，建議由 medium 開始。本系列的建議是日常維持預設，遇到以下情形才調高，即 agent 在同一個問題上反覆修改仍未解決，或任務須同時顧及多個檔案與多項條件，例如將整個專案的 code 重新分檔整理。反之，只是請它解釋一段 code 或做機械式的改寫，可以換成較小的模型。
+
+## Prompt 的別名
+
+CS 習慣替同一件事取好幾個名字，prompt 尤其如此，同一份文件裡前後換用兩三個詞也很常見。讀官方文件與網路文章時會遇到的叫法，依所指的東西整理如下：
+
+- 使用者送出的那段話：prompt、user message，中文有提示詞、指令、指示，指的都是同一件事。
+- 框架先寫上的那一段：system prompt、instructions，ChatGPT 與 Codex 的 custom instructions 也屬此類。Anthropic 的文件多稱 system prompt，OpenAI 的[文件](https://developers.openai.com/api/docs/guides/text)則寫 instructions。
+- 寫 prompt 這件事：prompt engineering（提示工程）。
+- LLM 每次讀進的全部文字：context，即[[LLM 與 agent 的運作原理]]一篇所說白板上的所有內容。
+
+Prompt 一詞本身也有兩種用法，狹義只指使用者送出的那段話，廣義則連框架先寫上的部分一併算入，讀到時須依上下文判斷。

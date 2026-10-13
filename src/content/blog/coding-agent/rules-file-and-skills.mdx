@@ -80,7 +80,7 @@ Skill 多半成組發佈。Claude 將包裝的單位稱為 plugin，一個 plugi
 
 收錄於官方 marketplace 的 plugin 可在桌面 app 內以圖形介面安裝：點選提示框旁的「+」按鈕，選 Plugins，再選 Add plugin，於開啟的 plugin 瀏覽器中找到要裝的那一個。
 
-`mattpocock-skills` 則改由作者的 repo 安裝，因為官方 marketplace 收錄的版本較舊，撰寫時尚未包含後文的 `retro`。社群的作者多半把自己的 GitHub repo 做成一個 marketplace，在對話框輸入內建的 `/plugin` 指令，先以一行將它加入，再以一行安裝其中的 plugin：
+`mattpocock-skills` 則改由作者的 repo 安裝，因為官方 marketplace 收錄的版本較舊，撰寫時尚未包含後文的 `retro`。GitHub 是代管 code 的網站，repo 是 repository 的簡稱，即作者放在上面、可供他人下載的一個專案資料夾。社群的作者多半把自己的 repo 做成一個 marketplace，在對話框輸入內建的 `/plugin` 指令，先以一行將它加入，再以一行安裝其中的 plugin：
 
 ```text
 /plugin marketplace add mattpocock/skills
@@ -110,7 +110,7 @@ improve-codebase-architecture、codebase-design
 這幾個 skill 下載並安裝到 .agents/skills。
 ```
 
-清單是後文試用的幾個 skill，另加[[整理專案]]一篇會用到的 `improve-codebase-architecture`。其中 `domain-modeling`、`writing-for-agents` 與 `codebase-design` 不必直接喚用，`grill-with-docs`、`retro` 與 `improve-codebase-architecture` 會各自載入它們，缺了便無法運作。過程中會出現兩次核准提示，一次是連網，一次是寫入 workspace 以外的位置，都是[[離開網頁對話]]一篇所述沙盒的正常反應。兩個做法擇一即可。
+清單是後文試用的幾個 skill，另加[[整理專案]]一篇會用到的 `improve-codebase-architecture`。其中 `domain-modeling`、`writing-for-agents` 與 `codebase-design` 不必直接喚用，`grill-with-docs`、`retro` 與 `improve-codebase-architecture` 會各自載入它們，缺了便無法運作。過程中會出現兩次核准提示，一次是連網，一次是寫入專案資料夾以外的位置，都是[[離開網頁對話]]一篇所述沙盒的正常反應。兩個做法擇一即可。
 
 Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 marketplace 的頁面裡點擊使用，無法打字喚用。
 
@@ -126,7 +126,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 
 以下試用其中幾個。
 
-以 grill 為名的 skill 有三個，做的是同一件事：讓 agent 反過來拷問使用者，就一份計畫逐輪提問，每一題附上它建議的答案，直到所有決定都已講明、沒有任何一處是默默假定的，在此之前它不會動手。分析計畫正適合如此處理：空白的欄位如何處置、納入哪些資料、依什麼標準剔除，這些決定如果未事先講明，agent 便會替使用者決定。[[寫 prompt 與選模型]]一篇[[寫 prompt 與選模型#Prompt 技巧與協作的做法]]一節有[[寫 prompt 與選模型#請 agent 先問]]一項，做法是自己寫一段 prompt 請 agent 訪問使用者；這三個 skill 便是那段 prompt 的現成版本，且寫得更周全，例如規定查得到的事實由 agent 自己去查，只把須由使用者決定的事拿來問。
+以 grill 為名的 skill 有三個，做的是同一件事：讓 agent 反過來拷問使用者，就一份計畫逐輪提問，每一題附上它建議的答案，直到所有決定都已講明、沒有任何一處是默默假定的，在此之前它不會動手。分析計畫正適合如此處理：空白的欄位如何處置、納入哪些資料、依什麼標準剔除，這些決定如果未事先講明，agent 便會替使用者決定。[[寫 prompt 與選模型]]一篇有[[寫 prompt 與選模型#請 agent 先問]]一項，做法是自己寫一段 prompt 請 agent 訪問使用者；這三個 skill 便是那段 prompt 的現成版本，且寫得更周全，例如規定查得到的事實由 agent 自己去查，只把須由使用者決定的事拿來問。
 
 三者的分別在於由誰喚用，以及問完留下什麼。`grilling` 是本體，拷問的規則都寫在這一份，使用者可以指名喚用，agent 也可以自行載入。`grill-me` 與 `grill-with-docs` 只能由使用者喚用，內容各只有一句：前者是載入 `grilling`；後者是同時載入 `grilling` 與 `domain-modeling`，一邊拷問一邊把談定的術語寫進專案的術語表，不易說明原因的決定則另存成一份決策紀錄（ADR）。只想把計畫談清楚，用 `grill-me`；談定的內容日後還要讓 agent 讀到，用 `grill-with-docs`。
 
@@ -159,7 +159,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 這份腳本每次執行得到的結果都略有不同，找出原因。
 ```
 
-`retro` 用於一件事做完之後。它讓 agent 回頭檢視這次對話的紀錄，找出自己在哪裡繞了遠路、犯了哪些錯，再依嚴重程度提出改善工作環境的建議，由使用者決定是否採納。建議的對象之一即是規範檔：哪幾條寫了卻沒有改變 agent 的行為、可以刪去，哪些錯誤與其寫成規矩不如改由自動檢查攔下，規範檔太長時哪些內容該移到別的檔案、只留一行指向它。[[#規範的逐步累積]]一節的做法是遇到問題才逐條地加，何時分檔也由使用者自己判斷；`retro` 則是整份地看，除了加也會刪，並指出該分出去的內容。它只能由使用者喚用，預設檢視目前的對話。
+`retro` 用於一件事做完之後。它讓 agent 回頭檢視這次對話的紀錄，找出自己在哪裡繞了遠路、犯了哪些錯，再依嚴重程度提出改善工作環境的建議，由使用者決定是否採納。建議的對象之一即是規範檔：哪幾條寫了卻沒有改變 agent 的行為、可以刪去，哪些錯誤與其寫成規矩，不如改由一段每次自動執行的檢查 code 攔下，規範檔太長時哪些內容該移到別的檔案、只留一行指向它。[[#規範的逐步累積]]一節的做法是遇到問題才逐條地加，何時分檔也由使用者自己判斷；`retro` 則是整份地看，除了加也會刪，並指出該分出去的內容。它只能由使用者喚用，預設檢視目前的對話。
 
 ```text
 /mattpocock-skills:retro
@@ -168,7 +168,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 
 ### `caveman`
 
-[`caveman`](https://github.com/JuliusBrussee/caveman) 是專為節省用量而寫的 skill，作用是讓 agent 以極簡的句子回覆，省去客套與重複的說明，技術內容不變。[[寫 prompt 與選模型]]一篇提過，用量取決於送進與送出 LLM 的 token 總數；`caveman` 減少的是 agent 輸出的文字，對於讀檔與工具輸出所佔的用量沒有影響，因此節省的幅度視工作的性質而定，對話多而讀檔少時較為明顯。
+[`caveman`](https://github.com/JuliusBrussee/caveman) 是專為節省用量而寫的 skill，作用是讓 agent 以極簡的句子回覆，省去客套與重複的說明，技術內容不變。[[LLM 與 agent 的運作原理]]一篇提過，LLM 讀進的與生成的 token 都計入用量；`caveman` 減少的是 agent 輸出的文字，對於讀檔與工具輸出所佔的用量沒有影響，因此節省的幅度視工作的性質而定，對話多而讀檔少時較為明顯。
 
 安裝的兩行指令已見前文。裝好之後在對話框輸入 `/caveman` 即啟用，此後整個對話的回覆都維持極簡，直到輸入 `/caveman off` 或直接說「stop caveman」為止，`/caveman status` 可查看目前是否啟用。另有兩個更省的級別，`/ultracave` 的句子更短，`/megacave` 改以文言文回覆，一般用 `/caveman` 即可。精簡的只是句子：code、指令、路徑、數字與錯誤訊息照原樣輸出，回覆的語言不變，遇到安全警告、無法復原的操作這類須講清楚的情況，則暫時改回完整的句子。
 
