@@ -46,6 +46,11 @@ const { scene } = Astro.props;
 	const canvas = document.querySelector<HTMLCanvasElement>('.wallpaper');
 	const name = canvas?.dataset.scene;
 	if (canvas && name && name in WALLPAPERS) {
-		mountScene(canvas, WALLPAPERS[name as keyof typeof WALLPAPERS], { followTheme: true });
+		// `?t=2.6` on the dev server holds the scene 2.6 seconds in; `scripts/shot.mjs --t` uses it.
+		const at = import.meta.env.DEV ? new URLSearchParams(location.search).get('t') : null;
+		mountScene(canvas, WALLPAPERS[name as keyof typeof WALLPAPERS], {
+			followTheme: true,
+			...(at !== null && Number.isFinite(Number(at)) && { frozenAt: Number(at) }),
+		});
 	}
 </script>

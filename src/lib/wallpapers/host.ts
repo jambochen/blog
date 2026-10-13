@@ -3,6 +3,8 @@ import type { Scene, SceneFactory, View } from './scene.ts';
 interface Options {
 	// Builds the scene anew when the page changes theme, since a scene reads the palette when it is built.
 	followTheme?: boolean;
+	// Holds the scene at this many seconds in and stops there, so one moment of its motion can be looked at.
+	frozenAt?: number;
 }
 
 // Runs a scene on a canvas that covers the window. Returns the scene first built; with
@@ -10,13 +12,14 @@ interface Options {
 export function mountScene<S extends Scene>(
 	canvas: HTMLCanvasElement,
 	factory: SceneFactory<S>,
-	{ followTheme = false }: Options = {},
+	{ followTheme = false, frozenAt }: Options = {},
 ): S | undefined {
 	const context = canvas.getContext('2d');
 	if (!context) return undefined;
 
 	const root = document.documentElement;
 	const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const paused = still || frozenAt !== undefined;
 	let scene: S;
 	let running = false;
 	let last = 0;
@@ -26,7 +29,7 @@ export function mountScene<S extends Scene>(
 		const elapsed = Math.min((now - last) / 1000, 0.05);
 		last = now;
 		scene.frame(context, elapsed);
-		running = !still && !document.hidden;
+		running = !paused && !document.hidden;
 		if (running) requestAnimationFrame(frame);
 	};
 
@@ -71,6 +74,8 @@ export function mountScene<S extends Scene>(
 		if (scene.column) canvas.dataset.column = scene.column;
 		else delete canvas.dataset.column;
 		resize();
+		// In the steps the loop would take at most, since a scene that simulates depends on the step.
+		for (let left = frozenAt ?? 0; left > 0; left -= 0.05) scene.frame(context, Math.min(left, 0.05));
 		return scene;
 	};
 
@@ -78,7 +83,7 @@ export function mountScene<S extends Scene>(
 	addEventListener('resize', resize);
 	document.addEventListener('visibilitychange', wake);
 	if (followTheme) new MutationObserver(build).observe(root, { attributeFilter: ['data-theme'] });
-	if (!still) {
+	if (!paused) {
 		addEventListener(
 			'pointermove',
 			(event) => {

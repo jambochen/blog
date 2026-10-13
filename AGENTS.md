@@ -8,7 +8,9 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
-After a change to the layout, or a new figure, table or code block, open the page at a width of 375px. Nothing may make the page scroll sideways, and text must keep enough contrast in light and dark.
+After a change to the layout, or a new figure, table or code block, look at the page at a width of 375px in light and dark: `node scripts/shot.mjs <path>` and again with `--dark`. It prints the PNG to read and fails when the page scrolls sideways; text must keep enough contrast in both.
+
+To look at a wallpaper's motion, add `--t <seconds>` to hold the scene at that moment. A browser tab in the background does not animate, so a screenshot of one shows the first frame.
 
 ## Documentation
 
