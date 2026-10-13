@@ -40,6 +40,39 @@ const { title, description, image = FallbackImage } = Astro.props;
 		(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 </script>
 
+<!--
+	A named element takes part in a page change wherever it is, so one far down the page would fly in from outside the window.
+	Only those in view keep their name for the change; the rest fade with the page. Inline, since `pagereveal` fires before
+	the first frame, which a module script can miss.
+-->
+<script is:inline>
+	{
+		const unnamed = new Map();
+		let latest;
+		const restore = () => {
+			for (const [element, name] of unnamed) element.style.viewTransitionName = name;
+			unnamed.clear();
+		};
+		const onlyInView = ({ viewTransition }) => {
+			// A page kept for the back button comes back with the names it lost when it was left.
+			restore();
+			if (!viewTransition) return;
+			for (const element of document.querySelectorAll('[style*="view-transition-name"], .site-header')) {
+				const box = element.getBoundingClientRect();
+				if (box.bottom > 0 && box.top < innerHeight && box.right > 0 && box.left < innerWidth) continue;
+				unnamed.set(element, element.style.viewTransitionName);
+				element.style.viewTransitionName = 'none';
+			}
+			// Only the latest change gives the names back, so one that ends late does not undo the next.
+			const change = (latest = viewTransition);
+			const done = () => change === latest && restore();
+			viewTransition.finished.then(done, done);
+		};
+		addEventListener('pageswap', onlyInView);
+		addEventListener('pagereveal', onlyInView);
+	}
+</script>
+
 <Font cssVariable="--font-mincho" />
 <Font cssVariable="--font-gothic" />
 <!-- The series numbers are set large in this face, so a late swap from the fallback is seen as the number changing. -->
