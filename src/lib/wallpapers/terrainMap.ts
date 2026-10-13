@@ -8,9 +8,14 @@ export type Point = [number, number];
 const CONTINENT = 820;
 const EROSION = 560;
 const RIDGE = 400;
-// Height above LAND is ground; above HIGH it is the hatched high ground.
+// Height above LAND is ground. Survey points stay below HIGH, where the contour lines are still far enough apart for a label.
 export const LAND = 0;
 export const HIGH = 0.3;
+// The height between two contour lines; every INDEX_EVERY-th line is an index contour, drawn heavier and numbered.
+export const INTERVAL = 0.05;
+export const INDEX_EVERY = 5;
+// The least distance between two contour numbers, in px.
+const LABEL_SPACING = 190;
 // How close to a valley line the ground is cut down into a river, in units of the ridge noise.
 const RIVER = 0.09;
 const MARKERS_PER_SIDE = 2;
@@ -58,7 +63,8 @@ export function elevationOf(seed: number): (x: number, y: number) => number {
 
 		const inland = clamp(continent / 0.35);
 		const rugged = inland * clamp(0.65 - erosion);
-		const ground = continent < 0 ? continent : 0.06 + continent * 0.35 + Math.max(0, peaks) * 0.55 * rugged;
+		// Both branches meet at zero on the shore: a step there would be traced as a staircase.
+		const ground = continent < 0 ? continent : continent * 0.35 + Math.max(0, peaks) * 0.55 * rugged;
 		const river = inland * clamp(1 - Math.abs(weirdness) / RIVER);
 		return ground - river * (ground + 0.3);
 	};
@@ -135,4 +141,38 @@ export function surveyRoutes(
 		}
 		return points.sort((a, b) => a[1] - b[1]);
 	});
+}
+
+export interface ContourLabel {
+	at: Point;
+	// The direction of the line there, in radians, turned so the number is never upside down.
+	angle: number;
+	level: number;
+}
+
+// Where the index contours get their numbers. Like the survey points they stay in the margins, clear of the text,
+// and apart from each other and from the points in `taken`, so a number reads as part of its line.
+export function contourLabels(
+	lines: { level: number; edges: [Point, Point][] }[],
+	{ width, height, margin }: { width: number; height: number; margin: number },
+	taken: Point[] = [],
+): ContourLabel[] {
+	const inset = 28;
+	const near = (a: Point, b: Point, reach: number) => Math.hypot(a[0] - b[0], a[1] - b[1]) < reach;
+	const labels: ContourLabel[] = [];
+	for (const { level, edges } of lines) {
+		for (const [from, to] of edges) {
+			const at: Point = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+			const beside = (at[0] > inset && at[0] < margin - inset) || (at[0] > width - margin + inset && at[0] < width - inset);
+			if (!beside || at[1] < inset || at[1] > height - inset) continue;
+			if (labels.some((label) => near(label.at, at, LABEL_SPACING))) continue;
+			// A survey point's label runs to its right, so the room kept clear is centred there.
+			if (taken.some(([x, y]) => near([x + LABEL_ROOM / 2, y], at, LABEL_ROOM))) continue;
+			let angle = Math.atan2(to[1] - from[1], to[0] - from[0]);
+			if (angle > Math.PI / 2) angle -= Math.PI;
+			if (angle <= -Math.PI / 2) angle += Math.PI;
+			labels.push({ at, angle, level });
+		}
+	}
+	return labels;
 }

@@ -1,18 +1,17 @@
 import type { SceneFactory } from './scene.ts';
-import { type Contour, contourOf, elevationOf, HIGH, LAND, type Point, surveyRoutes } from './terrainMap.ts';
+import { contourLabels, contourOf, elevationOf, INDEX_EVERY, INTERVAL, LAND, type Point, surveyRoutes } from './terrainMap.ts';
 
 // The side of one marching-squares cell, in px.
-const CELL = 10;
+const CELL = 8;
 // One pass of the scan line, and the wait before the next, in seconds.
 const SWEEP = 9;
 const REST = 5;
 // How far the afterglow trails behind the scan line, and in how many steps it fades.
 const TRAIL = 260;
 const TRAIL_STEPS = 13;
-const RETICLE_GRID = 24;
-const RETICLE_REST = 2.5;
 
-// Drawn like Arknights: Endfield's map: flat landmasses with hatched high ground, outlined, with dashed routes between survey points.
+// Drawn like a topographic sheet: a contour line at every interval of height, each fifth one heavier and numbered,
+// the sea left blank, and dashed routes between survey points.
 export const terrain: SceneFactory = (palette) => {
 	const accent = palette.dark ? '255, 226, 60' : '214, 150, 0';
 	const elevation = elevationOf(Math.random() * 1000);
@@ -24,21 +23,14 @@ export const terrain: SceneFactory = (palette) => {
 	let ratio = 1;
 	let margin = 0;
 	let clock = 0;
-	// `at` is the clock's reading when the pointer last moved.
-	let pointer: { x: number; y: number; at: number } | undefined;
 
-	const paths = ({ areas, edges }: Contour) => {
-		const area = new Path2D();
-		const outline = new Path2D();
-		for (const polygon of areas) {
-			polygon.forEach(([x, y], index) => (index === 0 ? area.moveTo(x, y) : area.lineTo(x, y)));
-			area.closePath();
-		}
+	const outline = (edges: [Point, Point][]) => {
+		const path = new Path2D();
 		for (const [from, to] of edges) {
-			outline.moveTo(...from);
-			outline.lineTo(...to);
+			path.moveTo(...from);
+			path.lineTo(...to);
 		}
-		return { area, outline };
+		return path;
 	};
 
 	const diamond = (context: CanvasRenderingContext2D, [x, y]: Point, size: number) => {
@@ -61,10 +53,22 @@ export const terrain: SceneFactory = (palette) => {
 			}
 		}
 		const field = { heights, columns, rows };
-		const land = paths(contourOf(field, LAND, CELL, [-CELL, -CELL]));
-		const high = paths(contourOf(field, HIGH, CELL, [-CELL, -CELL]));
+		const summit = heights.reduce((highest, height) => Math.max(highest, height), 0);
+		const coast = outline(contourOf(field, LAND, CELL, [-CELL, -CELL]).edges);
+		const plain = new Path2D();
+		const index = new Path2D();
+		const indexLines: { level: number; edges: [Point, Point][] }[] = [];
+		for (let step = 1; step * INTERVAL < summit; step++) {
+			const level = step * INTERVAL;
+			const { edges } = contourOf(field, level, CELL, [-CELL, -CELL]);
+			if (step % INDEX_EVERY === 0) {
+				index.addPath(outline(edges));
+				indexLines.push({ level, edges });
+			} else plain.addPath(outline(edges));
+		}
 		const routes = surveyRoutes({ width, height, margin }, elevation, Math.random);
 		const points = routes.flat();
+		const labels = contourLabels(indexLines, { width, height, margin }, points);
 
 		for (const canvas of [base, glow]) {
 			canvas.width = width * ratio;
@@ -74,26 +78,38 @@ export const terrain: SceneFactory = (palette) => {
 		const paper = base.getContext('2d')!;
 		paper.setTransform(ratio, 0, 0, ratio, 0, 0);
 		paper.fillStyle = paper.strokeStyle = palette.ink;
+		paper.font = `500 10px ${palette.font}`;
+
+		paper.lineWidth = 1;
+		paper.globalAlpha = 0.14;
+		paper.stroke(plain);
+		paper.globalAlpha = 0.3;
+		paper.lineWidth = 1.3;
+		paper.stroke(index);
+		paper.globalAlpha = 0.42;
+		paper.lineWidth = 1.6;
+		paper.stroke(coast);
 		paper.lineWidth = 1;
 
-		paper.globalAlpha = 0.035;
-		paper.fill(land.area);
-
-		paper.save();
-		paper.clip(high.area);
-		paper.globalAlpha = 0.1;
-		paper.beginPath();
-		for (let offset = -height; offset < width; offset += 7) {
-			paper.moveTo(offset, 0);
-			paper.lineTo(offset + height, height);
+		paper.textAlign = 'center';
+		paper.textBaseline = 'middle';
+		for (const { at, angle, level } of labels) {
+			const text = String(Math.round(level * 1000));
+			paper.save();
+			paper.translate(...at);
+			paper.rotate(angle);
+			// The line is broken under its number, as on a printed sheet.
+			paper.globalCompositeOperation = 'destination-out';
+			paper.globalAlpha = 1;
+			const gap = paper.measureText(text).width + 8;
+			paper.fillRect(-gap / 2, -6, gap, 12);
+			paper.globalCompositeOperation = 'source-over';
+			paper.globalAlpha = 0.5;
+			paper.fillText(text, 0, 0.5);
+			paper.restore();
 		}
-		paper.stroke();
-		paper.restore();
-
-		paper.globalAlpha = 0.2;
-		paper.stroke(land.outline);
-		paper.globalAlpha = 0.13;
-		paper.stroke(high.outline);
+		paper.textAlign = 'start';
+		paper.textBaseline = 'alphabetic';
 
 		paper.globalAlpha = 0.28;
 		paper.setLineDash([3, 6]);
@@ -104,7 +120,6 @@ export const terrain: SceneFactory = (palette) => {
 		paper.stroke();
 		paper.setLineDash([]);
 
-		paper.font = `500 10px ${palette.font}`;
 		points.forEach((point, index) => {
 			paper.globalAlpha = 0.45;
 			diamond(paper, point, 5);
@@ -119,9 +134,11 @@ export const terrain: SceneFactory = (palette) => {
 		light.setTransform(ratio, 0, 0, ratio, 0, 0);
 		light.strokeStyle = light.fillStyle = `rgb(${accent})`;
 		light.lineWidth = 1.4;
-		light.stroke(land.outline);
-		light.globalAlpha = 0.6;
-		light.stroke(high.outline);
+		light.stroke(coast);
+		light.stroke(index);
+		light.globalAlpha = 0.45;
+		light.lineWidth = 1;
+		light.stroke(plain);
 		light.globalAlpha = 1;
 		for (const point of points) {
 			diamond(light, point, 5);
@@ -157,36 +174,6 @@ export const terrain: SceneFactory = (palette) => {
 					context.fillRect(scan, 0, 1, height);
 				}
 			}
-
-			const idle = pointer ? clock - pointer.at : Infinity;
-			if (pointer && idle < RETICLE_REST) {
-				const x = Math.floor(pointer.x / RETICLE_GRID) * RETICLE_GRID;
-				const y = Math.floor(pointer.y / RETICLE_GRID) * RETICLE_GRID;
-				const [size, arm] = [RETICLE_GRID * 2, 6];
-				// Fades over the last part of the rest, so the box does not blink out.
-				context.globalAlpha = Math.min(1, (RETICLE_REST - idle) / 0.6) * 0.5;
-				context.strokeStyle = context.fillStyle = palette.ink;
-				context.lineWidth = 1;
-				context.beginPath();
-				for (const [cx, cy, dx, dy] of [
-					[x, y, 1, 1],
-					[x + size, y, -1, 1],
-					[x + size, y + size, -1, -1],
-					[x, y + size, 1, -1],
-				] as const) {
-					context.moveTo(cx + dx * arm, cy);
-					context.lineTo(cx, cy);
-					context.lineTo(cx, cy + dy * arm);
-				}
-				context.stroke();
-				context.font = `500 10px ${palette.font}`;
-				const cell = (value: number) => String(value / RETICLE_GRID).padStart(3, '0');
-				context.fillText(`${cell(x)}  ${cell(y)}`, x, y + size + 13);
-				context.globalAlpha = 1;
-			}
-		},
-		move(x, y) {
-			pointer = { x, y, at: clock };
 		},
 	};
 };
