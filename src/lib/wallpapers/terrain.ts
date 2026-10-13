@@ -6,18 +6,32 @@ const CELL = 8;
 // One pass of the scan line, and the wait before the next, in seconds.
 const SWEEP = 9;
 const REST = 5;
-// How far the afterglow trails behind the scan line, and in how many steps it fades.
-const TRAIL = 260;
-const TRAIL_STEPS = 13;
+// How far the afterglow trails behind the scan line at most, and the share of a narrow window it may cover.
+const TRAIL = 600;
+const TRAIL_SHARE = 0.45;
+// The width just behind the scan line that flashes before it settles into the afterglow colour.
+const FLASH = 24;
+// How long a survey point stays lit after the scan line crosses it, in seconds. Longer than the lines around it.
+const LINGER = 4;
 
 // Drawn like a topographic sheet: a contour line at every interval of height, each fifth one heavier and numbered,
 // the sea left blank, and dashed routes between survey points.
-export const terrain: SceneFactory = (palette) => {
+export const terrain: SceneFactory = (palette, still) => {
 	const accent = palette.dark ? '255, 226, 60' : '214, 150, 0';
+	// Like a P7 radar tube: a flash under the beam, then a long amber afterglow. On white paper the flash is the darker tone.
+	const flash = palette.dark ? '255, 250, 228' : '128, 76, 0';
 	const elevation = elevationOf(Math.random() * 1000);
 	// Canvases of their own, so a frame costs two blits and the contours are traced only when the window changes.
 	const base = document.createElement('canvas');
 	const glow = document.createElement('canvas');
+	// The strip of `glow` behind the scan line, faded for the frame being drawn.
+	const afterglow = document.createElement('canvas');
+	// The `!` is safe: a 2D context is only refused when the canvas already has another kind, and this one is new.
+	const strip = afterglow.getContext('2d')!;
+	let fade: CanvasGradient | undefined;
+	let head: CanvasGradient | undefined;
+	let trail = TRAIL;
+	let points: Point[] = [];
 	let width = 0;
 	let height = 0;
 	let ratio = 1;
@@ -67,7 +81,7 @@ export const terrain: SceneFactory = (palette) => {
 			} else plain.addPath(outline(edges));
 		}
 		const routes = surveyRoutes({ width, height, margin }, elevation, Math.random);
-		const points = routes.flat();
+		points = routes.flat();
 		const labels = contourLabels(indexLines, { width, height, margin }, points);
 
 		for (const canvas of [base, glow]) {
@@ -139,11 +153,17 @@ export const terrain: SceneFactory = (palette) => {
 		light.globalAlpha = 0.45;
 		light.lineWidth = 1;
 		light.stroke(plain);
-		light.globalAlpha = 1;
-		for (const point of points) {
-			diamond(light, point, 5);
-			light.fill();
-		}
+
+		trail = Math.min(TRAIL, width * TRAIL_SHARE);
+		afterglow.width = trail * ratio;
+		afterglow.height = height * ratio;
+		strip.setTransform(ratio, 0, 0, ratio, 0, 0);
+		// Eased, so the afterglow has no edge where it ends.
+		fade = strip.createLinearGradient(0, 0, trail, 0);
+		for (let stop = 0; stop <= 8; stop++) fade.addColorStop(stop / 8, `rgba(0, 0, 0, ${(stop / 8) ** 2 * 0.9})`);
+		head = strip.createLinearGradient(trail - FLASH, 0, trail, 0);
+		head.addColorStop(0, `rgba(${flash}, 0)`);
+		head.addColorStop(1, `rgb(${flash})`);
 	};
 
 	return {
@@ -158,22 +178,38 @@ export const terrain: SceneFactory = (palette) => {
 			context.clearRect(0, 0, width, height);
 			context.drawImage(base, 0, 0, width, height);
 
+			if (still || !fade || !head) return;
 			const phase = clock % (SWEEP + REST);
+			const speed = (width + trail) / SWEEP;
+			const scan = phase * speed;
 			if (phase < SWEEP) {
-				const scan = (phase / SWEEP) * (width + TRAIL);
-				const step = TRAIL / TRAIL_STEPS;
-				for (let index = 0; index < TRAIL_STEPS; index++) {
-					const left = scan - (index + 1) * step;
-					if (left + step < 0 || left > width) continue;
-					context.globalAlpha = (1 - index / TRAIL_STEPS) ** 2 * 0.85;
-					context.drawImage(glow, left * ratio, 0, step * ratio, height * ratio, left, 0, step, height);
-				}
-				context.globalAlpha = 1;
+				const left = scan - trail;
+				strip.globalCompositeOperation = 'source-over';
+				strip.clearRect(0, 0, trail, height);
+				strip.drawImage(glow, left * ratio, 0, trail * ratio, height * ratio, 0, 0, trail, height);
+				// Only where a line is already drawn.
+				strip.globalCompositeOperation = 'source-atop';
+				strip.fillStyle = head;
+				strip.fillRect(trail - FLASH, 0, FLASH, height);
+				strip.globalCompositeOperation = 'destination-in';
+				strip.fillStyle = fade;
+				strip.fillRect(0, 0, trail, height);
+				context.drawImage(afterglow, left, 0, trail, height);
 				if (scan < width) {
-					context.fillStyle = `rgba(${accent}, 0.45)`;
+					context.fillStyle = `rgba(${flash}, 0.6)`;
 					context.fillRect(scan, 0, 1, height);
 				}
 			}
+
+			for (const point of points) {
+				const lit = (scan - point[0]) / speed;
+				if (lit < 0 || lit > LINGER) continue;
+				context.globalAlpha = (1 - lit / LINGER) ** 2;
+				context.fillStyle = `rgb(${lit * speed < FLASH ? flash : accent})`;
+				diamond(context, point, 5);
+				context.fill();
+			}
+			context.globalAlpha = 1;
 		},
 	};
 };
