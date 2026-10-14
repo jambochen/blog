@@ -16,6 +16,9 @@ export function routesFor(base: string) {
 		pagefind: `${root}/pagefind/pagefind.js`,
 
 		post: (id: string) => `${root}/${id}/`,
+		// The picture a shared link is shown with: one for each post, and one for every other page.
+		postCard: (id: string) => `${root}/og/${id}.png`,
+		siteCard: `${root}/og.png`,
 		series: (key: string) => `${root}/${key}/`,
 
 		// Only a whole leading segment is the base: under `/blog`, `/blogger` is another path.

@@ -24,7 +24,7 @@ const { previous, next, stillToCome, continues } = turn;
 const { title, description } = entry.post.data;
 ---
 
-<Base title={`${title} | ${SITE_TITLE}`} description={description} wallpaper="threeBody">
+<Base title={`${title} | ${SITE_TITLE}`} description={description} wallpaper="threeBody" card={routes.postCard(entry.id)}>
 	<article data-pagefind-body data-tone={entry.series?.tone}>
 		<PostHeader entry={entry} />
 		<div class="wrap body">

@@ -9,15 +9,16 @@ interface Props {
 	title: string;
 	description: string;
 	wallpaper?: WallpaperName;
+	card?: string;
 }
 
-const { title, description, wallpaper = 'terrain' } = Astro.props;
+const { title, description, wallpaper = 'terrain', card } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="zh-Hant">
 	<head>
-		<BaseHead title={title} description={description} />
+		<BaseHead title={title} description={description} card={card} />
 		<slot name="head" />
 	</head>
 	<body>
