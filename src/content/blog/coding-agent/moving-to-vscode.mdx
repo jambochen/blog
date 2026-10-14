@@ -9,7 +9,7 @@ seriesOrder: 9
 
 在此之前，工作是在兩個視窗之間進行的，agent 於桌面 app 內改檔，改完之後要看檔案、執行 R，則須切到 RStudio；而桌面 app 沒有 Git 面板，提交有哪些、各自改了什麼，都靠 agent 轉述。這套環境已經完整可用，如果覺得足夠，本系列讀到此處即可停下。
 
-VS Code 是 Microsoft 的免費編輯器，也是目前使用最廣的一個，Stack Overflow 2026 年的[開發者調查](https://survey.stackoverflow.co/2026/technology/data)裡，約七成受訪者經常使用它；用的人多，擴充套件與教學也就多。它本身只負責開檔與編輯，其餘功能靠擴充套件補上。裝上 Claude Code 的擴充套件之後，編輯器、agent 與 Git 面板便在同一個視窗之內，agent 改了哪一行，旁邊的編輯器當場可見，提交也可自己翻看，不必再問。代價是多裝一個軟體、重新適應一套介面，因此本篇只寫給願意繼續的人。
+VS Code 是 Microsoft 的免費編輯器，也是目前使用最廣的一個，Stack Overflow 2026 年的[開發者調查](https://survey.stackoverflow.co/2026/technology/data)裡，約七成受訪者經常使用它；用的人多，擴充套件與教學也就多。它本身只負責開檔與編輯，其餘功能靠擴充套件補上。裝上 Claude Code 的擴充套件之後，編輯器、agent 與 Git 面板便在同一個視窗之內，agent 改了哪一行，旁邊的編輯器當場可見，提交也可自己翻看，不必再問。代價是多裝一個軟體、重新適應一套介面。
 
 遷移並不必捨棄原本的編輯器與桌面 app。RStudio 與 VS Code 開啟的是同一個資料夾，讀的是同一份 code 與同一組提交，哪一件事在哪邊順手便在哪邊做。桌面 app 也一樣，規範檔、skill 的做法與提交都跟著專案資料夾，並不綁定介面，留著它處理不需要看 code 的工作，或就此不再開啟，都無妨。
 
@@ -59,7 +59,7 @@ VS Code 本體的功能不多，開檔、編輯、搜尋、終端機與 Git 之�
 
 Manual 模式下，agent 每次要改檔都先開啟這份對照並等待決定，可以接受、拒絕，或在對話框告訴它應該怎麼改。除了整份接受或拒絕之外，另有較細的做法。對照之中每一處改動底下都有 Accept this change 與 Reject this change 兩個按鈕，可以只留下其中幾處；單一檔案的改動超過 100 處時，這組按鈕不會出現，只能整份決定。也可直接在對照裡修改 agent 提議的內容再接受，agent 會被告知內容經過修改，不至於誤以為檔案與它原先提議的相同。
 
-看對照的原則與[[離開網頁對話#權限提示與 plan mode]]一節相同，先看改的是哪個檔案、範圍是否與所交代的相稱。差別在於此處看得見上下文，例如交代「把圖的配色改掉」，對照裡卻出現讀取資料或篩選樣本的那幾行，一眼即可發現，此時拒絕該處並詢問原因。
+看對照的原則與[[離開網頁對話#權限提示與 plan mode]]一節相同，差別在於此處看得見上下文，改動落在所交代的範圍之外時一眼即可發現，此時拒絕該處並詢問原因。
 
 擴充套件也支援 checkpoint。滑鼠移到對話中任何一則訊息上，會出現 rewind 按鈕，按下後有三個選項：
 
@@ -69,7 +69,7 @@ Manual 模式下，agent 每次要改檔都先開啟這份對照並等待決定�
 | Rewind code to here | 把檔案退回這則訊息當時的狀態，對話紀錄保留 |
 | Fork conversation and rewind code | 另起一段對話，同時把檔案退回當時的狀態 |
 
-Rewind 能退回什麼、救不回什麼，[[版本控制#Rewind 的能力與局限]]一節已經說明，此處不再重複；它適合用於剛發生的幾步改動，跨越數日的退回仍靠提交。
+Rewind 能退回什麼、救不回什麼，見[[版本控制#Rewind 的能力與局限]]一節；它適合用於剛發生的幾步改動，跨越數日的退回仍靠提交。
 
 Codex 也有 [VS Code 擴充套件](https://marketplace.visualstudio.com/items?itemName=openai.chatgpt)，於 Extensions 檢視搜尋 Codex 也可找到，發行者為 OpenAI，以 ChatGPT 帳號登入，同樣讀取專案內的 `AGENTS.md`，見 [OpenAI 的說明](https://learn.chatgpt.com/docs/codex/ide)。
 

@@ -7,15 +7,9 @@ seriesOrder: 3
 
 模型愈來愈強，以往須用上許多技巧才做得好的事，如今一句話便能做到，許多人也因此不再重視下指令的方式。指令寫得粗略仍做得成，是因為模型力大磚飛；但模型的進步同時提高了下限與上限，需求寫得愈準確，結果才愈接近上限。
 
-## Prompt 的由來
-
-[[LLM 與 agent 的運作原理#基本原理]]一節已說明，LLM 所做的事是讀進一段文字，再接著往下寫，讀進去的這段文字便稱為 prompt。Prompt 在英文裡是提詞的意思，劇場裡替忘詞的演員提一句開頭，演員便能接著演下去。LLM 最初的用法正是如此，使用者寫下一段開頭，由它續寫或補完。對話是其後才有的形態，做法是將雙方說過的話排成一份標明誰說了什麼的紀錄，交給 LLM 續寫下一句回答，本質上仍是續寫，prompt 一詞也就沿用了下來。
-
-本篇寫 prompt 時，指的是使用者自己寫的這一部分；讀官方文件與網路文章時會遇到的其他叫法，見[[#Prompt 的別名]]一節。
-
 ## Prompt 技巧與協作的做法
 
-Anthropic 與 OpenAI 各有寫給開發者與使用者的指南，說明如何替自家的模型與 agent 寫 prompt：
+Prompt 是使用者送給 LLM 的那段文字。Anthropic 與 OpenAI 各有寫給開發者與使用者的指南，說明如何替自家的模型與 agent 寫 prompt：
 
 - Anthropic：[Prompting best practices](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)、[Best practices for Claude Code](https://code.claude.com/docs/en/best-practices)
 - OpenAI：[Prompt guidance](https://developers.openai.com/api/docs/guides/prompt-guidance)、[Best practices](https://learn.chatgpt.com/guides/best-practices)
@@ -24,7 +18,7 @@ Anthropic 與 OpenAI 各有寫給開發者與使用者的指南，說明如何�
 
 網路上流傳的技巧有兩類本篇不收。一類是給小費、威脅、刻意客氣與全大寫的加重語氣，不收的原因是沒有可靠的效果：前三者經 Wharton 的實測（[客氣](https://arxiv.org/abs/2503.04818)、[小費與威脅](https://arxiv.org/abs/2508.00614)），整體都沒有可靠的效果，個別題目時好時壞，事先無法得知；全大寫的加重語氣，Anthropic 的[指南](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)也建議改回平常的說法。
 
-另一類是要它「一步一步想」，不收的原因是模型已內建這個做法。這個做法稱為 chain of thought（CoT），出自 2022 年的[一篇論文](https://arxiv.org/abs/2201.11903)：在 prompt 裡附上幾個寫出推理過程的範例，模型便會照樣先推理再作答，數學應用題的正確率因而明顯提高。同年的[另一篇論文](https://arxiv.org/abs/2205.11916)發現連範例也不必給，只在 prompt 末尾加上 Let's think step by step，當時的模型在一組算術題上的正確率便由 17.7% 升至 78.7%。其後的模型已將這個做法學了進去，許多更內建了思考模式，回答之前本來就會先推理，等於每一則 prompt 都已帶著這句話，再寫一次只是重複；推理多少則由 effort 決定，見[[#模型規模與 effort]]一節。Wharton 的[實測](https://arxiv.org/abs/2506.07142)也發現，在這類模型上加這句話，正確率幾乎沒有提高，卻明顯更慢、更耗 token。
+另一類是要它「一步一步想」，不收的原因是模型已內建這個做法。這個做法稱為 chain of thought（CoT），早期的模型須在 prompt 裡要求先推理再作答，正確率才會提高。其後的模型已將這個做法學了進去，許多更內建了思考模式，回答之前本來就會先推理，等於每一則 prompt 都已帶著這句話，再寫一次只是重複；推理多少則由 effort 決定，見[[#模型規模與 effort]]一節。Wharton 的[實測](https://arxiv.org/abs/2506.07142)也發現，在這類模型上加這句話，正確率幾乎沒有提高，卻明顯更慢、更耗 token。
 
 ### 寫明要什麼樣的產出
 
@@ -90,11 +84,11 @@ Anthropic 的指南建議，同一個問題糾正超過兩次便開新對話。�
 直接用 as.Date() 會把民國年變成缺失值，不要這樣做。
 ```
 
-我個人重開時，也會一併換成更大一級的模型，分級見[[#模型規模與 effort]]一節。糾正兩次仍做不對，原因未必只在舊對話，也可能是這件事超出了目前模型的能力，換上較大的模型再試，往往一次便過。
+我個人重開時，也會一併換成更大一級的模型，因為做不對的原因也可能是這件事超出了目前模型的能力，分級見[[#模型規模與 effort]]一節。
 
 ### 另開新對話審查
 
-Agent 改完之後，另開一個新對話審查，不要在原對話裡請它自己檢查，原因與[[#糾正兩次仍不對便重開]]一項相同：先前的推理仍留在原對話的 context window 裡，它會沿著原來的思路再走一遍。這就像剛寫完報告的人自己校稿，讀到的是心裡想寫的意思，不是紙上實際寫的字，換一位同學來看，才看得出哪裡漏了。新的對話沒有先前的推理，只看得到資料夾裡的檔案，處境與那位同學相同。Anthropic 的[指南](https://code.claude.com/docs/en/best-practices)即指出，新的 context 有助於審查，因為 Claude 不會偏袒自己剛寫的 code；研究也發現，沒有外部的回饋時，LLM 自行修正答案反而可能愈改愈差（[Huang 等，2024](https://arxiv.org/abs/2310.01798)）。
+Agent 改完之後，另開一個新對話審查，不要在原對話裡請它自己檢查，原因與[[#糾正兩次仍不對便重開]]一項相同。這就像剛寫完報告的人自己校稿，讀到的是心裡想寫的意思，不是紙上實際寫的字，換一位同學來看，才看得出哪裡漏了。新的對話沒有先前的推理，只看得到資料夾裡的檔案，處境與那位同學相同。Anthropic 的[指南](https://code.claude.com/docs/en/best-practices)即指出，新的 context 有助於審查，因為 Claude 不會偏袒自己剛寫的 code；研究也發現，沒有外部的回饋時，LLM 自行修正答案反而可能愈改愈差（[Huang 等，2024](https://arxiv.org/abs/2310.01798)）。
 
 在 Claude 桌面 app 裡點選側邊欄的 New session（Windows 上也可按 Ctrl+N），選取同一個資料夾，交代它要檢查什麼。審查時常會換用較大的模型或調高 effort，因為找錯比照著做更需要推理，而審查只讀不改，來回的次數少，多耗的用量有限；兩者的選擇見[[#模型規模與 effort]]一節。一次只交代一個角度，並寫明要看哪些檔案、找哪一類問題：
 
@@ -221,21 +215,6 @@ Prompt 也可以請它代寫。把零散的想法、要求與先前試過不行�
 
 反覆使用的 prompt 存成檔案，便是規範檔與 skill 的由來。[[規範檔與 skill#由 agent 起草初版|規範檔與 skill]]一篇的規範檔即由 agent 起草，不少 skill 也是這樣寫成的，Anthropic 並提供專門代寫 skill 的[工具](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/skill-creator)。
 
-## 多模態輸入與文字優先
-
-現今的 LLM 多為多模態（multimodal），除了文字也可讀進圖片，然而模型要理解圖片需要花費的 token 遠比文字更多。依 [Anthropic 的文件](https://platform.claude.com/docs/en/build-with-claude/vision#evaluate-image-size)，圖片是按尺寸計算 token 的，與內容多寡無關，一張 1920×1080 的全螢幕截圖在較新的模型上約為 2,700 個 token，而圖中如果只有三行錯誤訊息，以文字貼上不過數十個 token；圖片一經送出便留在對話裡，之後每一次來回都會重算一遍。
-
-圖片也讀不準，LLM 從圖片辨識小字與密集的數字時，準確度不如直接讀文字。統計分析尤其如此，結果多半畫成圖，而圖是給人看的，散布圖上某一點的座標、長條的高度，LLM 只能估計，圖背後的數字才是精確的。因此要 agent 解讀結果時，交給它的應是原始數字，即係數表、摘要統計或畫圖所用的那份資料，存成 CSV 讓它自己讀；圖則留給使用者自己看。
-
-因此原則是能用文字的便用文字。錯誤訊息應複製文字貼上，不要截圖；agent 自己執行 code 時出現的錯誤，它本來就讀得到，不必再貼。PDF、Excel 這類文件也是如此，需要反覆查閱的應先轉成文字格式再交給 agent，原因與做法是[[CSV、TeX 與 Markdown]]一篇的主題。
-
-附圖時同樣要寫明問題所在與期望的結果，圖只是佐證；截圖只截相關的部分，不要整個螢幕。
-
-```text
-附圖是 plot_trend.R 產生的圖。圖例蓋住了右上角的資料點，
-請把圖例移到圖的下方，其餘不變，改完重新輸出同一個檔名。
-```
-
 ## 模型規模與 effort
 
 兩家都將模型依規模分檔，大致可排成最大、大、中、小四檔，愈大者推理能力愈強，同時也愈慢、消耗的用量愈多。其中 Codex 目前只有三個型號，中間一檔從缺。下表為 2026-10-08 查證的結果，型號更替很快，請以官方頁面為準（[Claude](https://code.claude.com/docs/en/model-config)、[Codex](https://developers.openai.com/codex/models)）。
@@ -253,7 +232,9 @@ Effort 是另一個獨立的旋鈕，決定同一個模型在回答前花多少�
 
 模型與 effort 都不是愈大愈好。較大的模型與較高的 effort 會多讀檔案、多做檢查，對於改一個圖例、重新命名幾個欄位這類範圍明確的小事，只是更慢、更耗用量，結果沒有分別；Anthropic 的文件也提到，Opus 5.5 在 medium 的表現已相當於前一代在 high 的表現，建議由 medium 開始。本系列的建議是日常維持預設，遇到以下情形才調高，即 agent 在同一個問題上反覆修改仍未解決，或任務須同時顧及多個檔案與多項條件，例如將整個專案的 code 重新分檔整理。反之，只是請它解釋一段 code 或做機械式的改寫，可以換成較小的模型。
 
-## Prompt 的別名
+## Prompt 的由來與別名
+
+[[LLM 與 agent 的運作原理#基本原理]]一節已說明，LLM 所做的事是讀進一段文字，再接著往下寫，讀進去的這段文字便稱為 prompt。Prompt 在英文裡是提詞的意思，劇場裡替忘詞的演員提一句開頭，演員便能接著演下去。LLM 最初的用法正是如此，使用者寫下一段開頭，由它續寫或補完。對話是其後才有的形態，做法是將雙方說過的話排成一份標明誰說了什麼的紀錄，交給 LLM 續寫下一句回答，本質上仍是續寫，prompt 一詞也就沿用了下來。
 
 CS 習慣替同一件事取好幾個名字，prompt 尤其如此，同一份文件裡前後換用兩三個詞也很常見。讀官方文件與網路文章時會遇到的叫法，依所指的東西整理如下：
 
@@ -262,4 +243,4 @@ CS 習慣替同一件事取好幾個名字，prompt 尤其如此，同一份文�
 - 寫 prompt 這件事：prompt engineering（提示工程）。
 - LLM 每次讀進的全部文字：context，即[[LLM 與 agent 的運作原理#Context window]]一節所說白板上的所有內容。
 
-Prompt 一詞本身也有兩種用法，狹義只指使用者送出的那段話，廣義則連框架先寫上的部分一併算入，讀到時須依上下文判斷。
+Prompt 一詞本身也有兩種用法，狹義只指使用者送出的那段話，廣義則連框架先寫上的部分一併算入，讀到時須依上下文判斷；本篇寫 prompt 時指的是狹義。

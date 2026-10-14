@@ -23,7 +23,7 @@ seriesOrder: 5
 
 ## 由 agent 起草初版
 
-規範檔不必自己從空白寫起。Agent 既然讀得到專案裡的全部檔案，資料夾如何安排、用了哪些套件、腳本之間的先後順序，它都可自行歸納，使用者只需補上它看不出來的部分。由 agent 建立檔案還有一個好處，檔名與位置不會出錯，它知道自己讀的是 `CLAUDE.md` 還是 `AGENTS.md`，使用者不必自己記。
+規範檔不必自己從空白寫起。Agent 既然讀得到專案裡的全部檔案，資料夾如何安排、用了哪些套件、腳本之間的先後順序，它都可自行歸納。由 agent 建立檔案還有一個好處，檔名與位置不會出錯，它知道自己讀的是 `CLAUDE.md` 還是 `AGENTS.md`，使用者不必自己記。
 
 Claude Code 內建的指令以 `/` 開頭，在桌面 app 的對話框輸入 `/` 即可瀏覽，也可由「+」按鈕的 Slash commands 進入。其中的 `/init` 會分析專案並產生一份起始的 `CLAUDE.md`；如果檔案已存在，則提出修改建議而不覆寫。Codex 也有 `/init`，產生的是 `AGENTS.md`，見[官方的指令列表](https://learn.chatgpt.com/docs/reference/slash-commands)。
 
@@ -70,7 +70,7 @@ Claude Code 內建的指令以 `/` 開頭，在桌面 app 的對話框輸入 `/`
 
 另有一類話同樣要一講再講，卻與專案無關，而是與任務有關：查錯時應依什麼步驟進行、查資料時該找什麼來源、動手之前該先問清楚哪些事。這些做法在哪個專案都一樣，每次用到都得把同一段 prompt 再寫一遍，寫得倉促便漏掉幾項。
 
-Skill 就是把這樣的一段 prompt 事先寫成檔案，用到時喚用即可，不必重寫。它的內容與使用者自己在對話框裡交代的話並無不同；既然寫成了檔案，便可在不同的專案反覆使用，也可交給別人使用，他人花時間琢磨過的 prompt 因此可以直接安裝。Skill 可以自己寫，本篇只介紹安裝他人寫好的。
+Skill 就是把這樣的一段 prompt 事先寫成檔案，用到時喚用即可，不必重寫。既然寫成了檔案，便可在不同的專案反覆使用，也可交給別人使用，他人花時間琢磨過的 prompt 因此可以直接安裝。Skill 可以自己寫，本篇只介紹安裝他人寫好的。
 
 Skill 也不像規範檔那樣一直佔用 context window。平時只有它的名稱與一兩句描述載入，agent 據此知道有這項做法可用；待使用者指名喚用，或 agent 判斷眼前的任務與描述相符時，完整的內容才會載入。使用者層級的規範檔同樣跨專案，但它每次對話都全文載入，只適合放簡短的個人習慣，成篇的做法說明則寫成 skill。
 
@@ -87,21 +87,14 @@ Skill 多半成組發佈。Claude 將包裝的單位稱為 plugin，一個 plugi
 /plugin install mattpocock-skills@mattpocock
 ```
 
-第一行的 `mattpocock/skills` 是 GitHub 上的作者名與 repo 名，第二行 `@` 之後是 marketplace 的名稱。後文介紹的 `caveman` 未收錄於官方 marketplace，同樣以這兩行安裝：
+第一行的 `mattpocock/skills` 是 GitHub 上的作者名與 repo 名，第二行 `@` 之後是 marketplace 的名稱。先前已從官方 marketplace 裝過的人，先以 `/plugin uninstall mattpocock-skills` 移除再安裝。後文介紹的 `caveman` 未收錄於官方 marketplace，同樣以這兩行安裝：
 
 ```text
 /plugin marketplace add JuliusBrussee/caveman
 /plugin install caveman@caveman
 ```
 
-Codex 同樣有 plugin 與 marketplace，也同樣以兩行指令安裝，只是指令不在對話框裡輸入，而是在終端機（以文字輸入指令的視窗）執行，Windows 上可從開始功能表開啟「終端機」或 PowerShell：
-
-```text
-codex plugin marketplace add mattpocock/skills
-codex plugin add mattpocock-skills@mattpocock
-```
-
-另一個做法是將 GitHub 連結交給 agent，請它把 skill 的檔案直接放進 Codex 讀取 skill 的資料夾，即專案裡的 `.agents/skills`，如此裝好的可以打字喚用：
+Codex 同樣有 plugin 與 marketplace，較簡單的裝法是將 GitHub 連結交給 agent，請它把 skill 的檔案直接放進 Codex 讀取 skill 的資料夾，即專案裡的 `.agents/skills`：
 
 ```text
 把 https://github.com/mattpocock/skills 裡的 grilling、grill-me、grill-with-docs、
@@ -110,25 +103,21 @@ improve-codebase-architecture、codebase-design
 這幾個 skill 下載並安裝到 .agents/skills。
 ```
 
-清單是後文試用的幾個 skill，另加[[整理專案#函數與分檔]]一節會用到的 `improve-codebase-architecture`。其中 `domain-modeling`、`writing-for-agents` 與 `codebase-design` 不必直接喚用，`grill-with-docs`、`retro` 與 `improve-codebase-architecture` 會各自載入它們，缺了便無法運作。過程中會出現兩次核准提示，一次是連網，一次是寫入專案資料夾以外的位置，都是[[離開網頁對話#權限提示與 plan mode]]一節所述沙盒的正常反應。兩個做法擇一即可。
+清單是後文試用的幾個 skill，另加[[整理專案#函數與分檔]]一節會用到的 `improve-codebase-architecture`。其中 `domain-modeling`、`writing-for-agents` 與 `codebase-design` 不必直接喚用，`grill-with-docs`、`retro` 與 `improve-codebase-architecture` 會各自載入它們，缺了便無法運作。過程中會出現兩次核准提示，一次是連網，一次是寫入專案資料夾以外的位置，都是[[離開網頁對話#權限提示與 plan mode]]一節所述沙盒的正常反應。
 
-Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 marketplace 的頁面裡點擊使用，無法打字喚用。
+裝好之後，可以打字喚用：在對話框輸入 `/`，自清單中選取，選定的 skill 會顯示於輸入框，其後接著寫要交代的事；Codex 輸入的是 `$`。
 
-裝好之後，可以打字喚用：在對話框輸入 `/`，自清單中選取，選定的 skill 會顯示於輸入框，其後接著寫要交代的事；Codex 輸入的是 `$`。也可什麼都不做，agent 判斷任務與某個 skill 的描述相符時會自行載入。
-
-兩相比較，Claude 在社群支援上比 Codex 完善。社群的作者多以 Claude 為先，`mattpocock-skills` 即只做了 Claude 的 plugin，Codex 是讀取同一份寫給 Claude 的清單才裝得上。另有跨工具通用的安裝器 [skills.sh](https://skills.sh)，以 `npx` 執行，須先安裝 Node.js，而本系列的主線不安裝 Node.js，因此不採用。
+兩相比較，Claude 在社群支援上比 Codex 完善。社群的作者多以 Claude 為先，`mattpocock-skills` 即只做了 Claude 的 plugin。另有跨工具通用的安裝器 [skills.sh](https://skills.sh)，以 `npx` 執行，須先安裝 Node.js，而本系列的主線不安裝 Node.js，因此不採用。
 
 ### `mattpocock-skills`
 
 `mattpocock-skills` 是 Matt Pocock 公開的一組 skill，原為軟體開發而寫，其中數個與 code 的種類無關，資料分析也用得上。初次試用建議指名喚用，才能確知用上的是哪一個；以 plugin 安裝的 skill，清單裡的名稱帶有 plugin 的前綴，例如 `/mattpocock-skills:grilling`。
 
-先前已從官方 marketplace 裝過的人，先以 `/plugin uninstall mattpocock-skills` 移除，再照前文的兩行重新安裝，否則沒有後文的 `retro`。
-
 以下試用其中幾個。
 
 以 grill 為名的 skill 有三個，做的是同一件事：讓 agent 反過來拷問使用者，就一份計畫逐輪提問，每一題附上它建議的答案，直到所有決定都已講明、沒有任何一處是默默假定的，在此之前它不會動手。分析計畫正適合如此處理：空白的欄位如何處置、納入哪些資料、依什麼標準剔除，這些決定如果未事先講明，agent 便會替使用者決定。[[寫 prompt 與選模型]]一篇有[[寫 prompt 與選模型#請 agent 先問]]一項，做法是自己寫一段 prompt 請 agent 訪問使用者；這三個 skill 便是那段 prompt 的現成版本，且寫得更周全，例如規定查得到的事實由 agent 自己去查，只把須由使用者決定的事拿來問。
 
-三者的分別在於由誰喚用，以及問完留下什麼。`grilling` 是本體，拷問的規則都寫在這一份，使用者可以指名喚用，agent 也可以自行載入。`grill-me` 與 `grill-with-docs` 只能由使用者喚用，內容各只有一句：前者是載入 `grilling`；後者是同時載入 `grilling` 與 `domain-modeling`，一邊拷問一邊把談定的術語寫進專案的術語表，不易說明原因的決定則另存成一份決策紀錄（ADR）。只想把計畫談清楚，用 `grill-me`；談定的內容日後還要讓 agent 讀到，用 `grill-with-docs`。
+三者的分別在於由誰喚用，以及問完留下什麼。只想把計畫談清楚，用 `grill-me`；談定的內容日後還要讓 agent 讀到，用 `grill-with-docs`，它一邊拷問一邊把談定的術語寫進專案的術語表。兩者都只能由使用者喚用；`grilling` 是兩者共用的本體，使用者可以指名喚用，agent 也可以自行載入。
 
 ```text
 /mattpocock-skills:grill-me
@@ -159,7 +148,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 這份腳本每次執行得到的結果都略有不同，找出原因。
 ```
 
-`retro` 用於一件事做完之後。它讓 agent 回頭檢視這次對話的紀錄，找出自己在哪裡繞了遠路、犯了哪些錯，再依嚴重程度提出改善工作環境的建議，由使用者決定是否採納。建議的對象之一即是規範檔：哪幾條寫了卻沒有改變 agent 的行為、可以刪去，哪些錯誤與其寫成規矩，不如改由一段每次自動執行的檢查 code 攔下，規範檔太長時哪些內容該移到別的檔案、只留一行指向它。[[#規範的逐步累積]]一節的做法是遇到問題才逐條地加，何時分檔也由使用者自己判斷；`retro` 則是整份地看，除了加也會刪，並指出該分出去的內容。它只能由使用者喚用，預設檢視目前的對話。
+`retro` 用於一件事做完之後。它讓 agent 回頭檢視這次對話的紀錄，找出自己在哪裡繞了遠路、犯了哪些錯，再依嚴重程度提出改善工作環境的建議，由使用者決定是否採納。建議的對象之一即是規範檔：哪幾條寫了卻沒有改變 agent 的行為、可以刪去，哪些錯誤與其寫成規矩，不如改由一段每次自動執行的檢查 code 攔下，規範檔太長時哪些內容該移到別的檔案、只留一行指向它。它只能由使用者喚用，預設檢視目前的對話。
 
 ```text
 /mattpocock-skills:retro
@@ -170,7 +159,7 @@ Codex 的介面上也有 marketplace，但由該處裝好的 skill 只能在 mar
 
 [`caveman`](https://github.com/JuliusBrussee/caveman) 是專為節省用量而寫的 skill，作用是讓 agent 以極簡的句子回覆，省去客套與重複的說明，技術內容不變。[[LLM 與 agent 的運作原理#基本原理]]一節提過，LLM 讀進的與生成的 token 都計入用量；`caveman` 減少的是 agent 輸出的文字，對於讀檔與工具輸出所佔的用量沒有影響，因此節省的幅度視工作的性質而定，對話多而讀檔少時較為明顯。
 
-安裝的兩行指令已見前文。裝好之後在對話框輸入 `/caveman` 即啟用，此後整個對話的回覆都維持極簡，直到輸入 `/caveman off` 或直接說「stop caveman」為止，`/caveman status` 可查看目前是否啟用。另有兩個更省的級別，`/ultracave` 的句子更短，`/megacave` 改以文言文回覆，一般用 `/caveman` 即可。精簡的只是句子：code、指令、路徑、數字與錯誤訊息照原樣輸出，回覆的語言不變，遇到安全警告、無法復原的操作這類須講清楚的情況，則暫時改回完整的句子。
+裝好之後在對話框輸入 `/caveman` 即啟用，此後整個對話的回覆都維持極簡，直到輸入 `/caveman off` 或直接說「stop caveman」為止，`/caveman status` 可查看目前是否啟用。另有兩個更省的級別，`/ultracave` 的句子更短，`/megacave` 改以文言文回覆，一般用 `/caveman` 即可。精簡的只是句子：code、指令、路徑、數字與錯誤訊息照原樣輸出，回覆的語言不變，遇到安全警告、無法復原的操作這類須講清楚的情況，則暫時改回完整的句子。
 
 `caveman` 原本的設計是每個對話自動啟用，靠的是 plugin 附帶的 hook，即在對話開始等時機自動執行的一段 code，而這段 code 須有 Node.js 才能執行。本系列的主線不安裝 Node.js，因此改為每個對話手動輸入一次 `/caveman`。
 
