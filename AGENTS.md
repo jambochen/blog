@@ -8,6 +8,8 @@ astro dev --background
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
 
+Before changing the layout, a component's look or a page, read `docs/design.md`: it gives the colours, type, layout and motion in use, and the looks that were tried and turned down.
+
 After a change to the layout, or a new figure, table or code block, look at the page at a width of 375px in light and dark: `node scripts/shot.mjs <path>` and again with `--dark`. It prints the PNG to read and fails when the page scrolls sideways; text must keep enough contrast in both.
 
 To look at a wallpaper's motion, add `--t <seconds>` to hold the scene at that moment. A browser tab in the background does not animate, so a screenshot of one shows the first frame.
