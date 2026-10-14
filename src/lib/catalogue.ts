@@ -35,7 +35,7 @@ export interface Turn<P> {
 }
 
 export interface Catalogue<P> {
-	// Newest first.
+	// Newest first; episodes of one series published on the same day in reading order.
 	posts: Entry<P>[];
 	// The series written in most recently leads.
 	series: Series<P>[];
@@ -65,8 +65,17 @@ export function catalogue<P>(
 
 	const posts = sources
 		.filter((source) => isVisible(source, showDrafts))
-		// Posts of one date keep the same order however the adapter read them.
-		.sort((a, b) => b.pubDate - a.pubDate || (a.id < b.id ? 1 : -1))
+		.sort((a, b) => {
+			const placedA = placements.get(a.id);
+			const placedB = placements.get(b.id);
+			return (
+				b.pubDate - a.pubDate ||
+				// A series published in one day would otherwise be listed by file name.
+				(placedA && placedB && placedA.key === placedB.key ? placedA.number - placedB.number : 0) ||
+				// Posts of one date keep the same order however the adapter read them.
+				(a.id < b.id ? 1 : -1)
+			);
+		})
 		.map(({ id, post }): Entry<P> => {
 			const placement = placements.get(id);
 			return { id, post, placement, series: placement && refOf(placement.key) };

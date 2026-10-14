@@ -34,6 +34,15 @@ describe('catalogue', () => {
 		expect(ids(catalogue(sameDay, {}, false).posts)).toEqual(ids(catalogue([...sameDay].reverse(), {}, false).posts));
 	});
 
+	it('lists the episodes of one series published on the same day in reading order', () => {
+		const sameDay = [
+			source('s/c', day(1), { seriesOrder: 1 }),
+			source('s/a', day(1), { seriesOrder: 2 }),
+			source('s/b', day(1), { seriesOrder: 3 }),
+		];
+		expect(ids(catalogue(sameDay, registry, false).posts)).toEqual(['s/c', 's/a', 's/b']);
+	});
+
 	it('leads with the series written in most recently', () => {
 		expect(built.series.map(({ key }) => key)).toEqual(['s', 't']);
 		expect(catalogue([...sources, source('t/b', day(9))], registry, false).series.map(({ key }) => key)).toEqual([
