@@ -41,7 +41,8 @@ const { label } = Astro.props;
 		height: 2.75rem;
 		transition: translate 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 	}
-	/* The waiting arrow sits past the right edge, which would otherwise give the page a horizontal scrollbar. */
+	/* The waiting arrow sits past the right edge, which would otherwise make the page scroll sideways. Clipping the body alone does nothing: its overflow is handed to the window unless the root sets its own. */
+	:global(html),
 	:global(body) {
 		overflow-x: clip;
 	}
