@@ -1,200 +1,26 @@
 ---
-import FigureFrame from './FigureFrame.astro';
-
-// Depth, left edge and width in percent of the samples, and name, of each frame of the Python run in
-// `LineProfile.astro`, from `py-spy record --format raw`. Frames of one function are merged where py-spy
-// splits them by line; frames under 0.4% and below depth 13 are left out, where the real graph goes on.
-const blocks: [number, number, number, string][] = [
-	[0, 0, 100.0, 'all'],
-	[1, 0, 0.65, '<module> (mc.py:1)'],
-	[2, 0, 0.65, '_find_and_load'],
-	[3, 0, 0.65, '_find_and_load_unlocked'],
-	[4, 0, 0.65, '_load_unlocked'],
-	[5, 0, 0.65, 'exec_module'],
-	[6, 0, 0.65, '_call_with_frames_removed'],
-	[7, 0, 0.65, '<module>'],
-	[1, 0.72, 8.78, '<module> (mc.py:12)'],
-	[2, 0.86, 5.65, 'axis_nan_policy_wrapper'],
-	[3, 0.86, 2.13, '_broadcast_arrays'],
-	[4, 0.86, 1.72, '_broadcast_shapes'],
-	[3, 3.56, 0.62, 'getfullargspec'],
-	[4, 3.59, 0.45, '_signature_from_callable'],
-	[3, 4.45, 0.98, 'sem'],
-	[4, 4.76, 0.62, 'wrapped_f'],
-	[5, 4.76, 0.6, 'std'],
-	[6, 4.76, 0.57, 'std'],
-	[7, 4.76, 0.55, '_std'],
-	[8, 4.76, 0.55, '_var'],
-	[2, 6.51, 2.97, 'interval'],
-	[3, 6.51, 2.66, 'ppf'],
-	[4, 6.94, 1.34, 'argsreduce'],
-	[5, 7.44, 0.5, 'broadcast_arrays'],
-	[1, 9.76, 74.83, '<module> (mc.py:15)'],
-	[2, 9.76, 14.11, '_mean'],
-	[3, 9.76, 5.07, '_count_reduce_items'],
-	[2, 23.88, 0.41, '_prod_dispatcher'],
-	[2, 24.28, 32.3, 'prod'],
-	[3, 24.28, 26.77, '_wrapreduction'],
-	[1, 84.59, 1.7, '<module> (mc.py:16)'],
-	[2, 84.59, 1.6, 'percentile'],
-	[3, 84.64, 1.56, '_quantile_unchecked'],
-	[4, 84.64, 1.56, '_ureduce'],
-	[5, 84.64, 1.48, '_quantile_ureduce_func'],
-	[6, 84.64, 1.44, '_quantile'],
-	[1, 86.29, 3.37, '<module> (mc.py:17)'],
-	[2, 86.29, 3.16, '__init__'],
-	[3, 86.32, 3.09, 'dict_to_mgr'],
-	[4, 86.32, 1.51, '__new__'],
-	[5, 86.65, 0.89, 'sanitize_array'],
-	[4, 87.82, 1.03, 'arrays_to_mgr'],
-	[5, 87.94, 0.5, '_homogenize'],
-	[6, 87.97, 0.43, 'sanitize_array'],
-	[4, 88.92, 0.43, 'maybe_sequence_to_range'],
-	[1, 89.67, 2.37, '<module> (mc.py:18)'],
-	[2, 89.67, 2.32, 'concat'],
-	[3, 89.76, 2.11, '_get_result'],
-	[4, 89.9, 0.65, 'concatenate_managers'],
-	[4, 90.62, 1.12, 'new_axes'],
-	[5, 90.62, 0.55, '_get_concat_axis_dataframe'],
-	[6, 90.62, 0.53, '_concat_indexes'],
-	[7, 90.62, 0.48, 'append'],
-	[8, 90.62, 0.45, '_concat'],
-	[5, 91.17, 0.55, 'get_objs_combined_axis'],
-	[6, 91.22, 0.5, '_get_combined_index'],
-	[7, 91.29, 0.41, 'union_indexes'],
-	[1, 92.03, 1.2, '<module> (mc.py:2)'],
-	[2, 92.03, 1.2, '_find_and_load'],
-	[3, 92.03, 1.2, '_find_and_load_unlocked'],
-	[4, 92.03, 1.2, '_load_unlocked'],
-	[5, 92.03, 1.2, 'exec_module'],
-	[6, 92.03, 1.2, '_call_with_frames_removed'],
-	[7, 92.03, 1.2, '<module>'],
-	[8, 92.03, 1.15, '_find_and_load'],
-	[9, 92.03, 1.15, '_find_and_load_unlocked'],
-	[10, 92.03, 1.15, '_load_unlocked'],
-	[11, 92.03, 1.15, 'exec_module'],
-	[12, 92.03, 1.15, '_call_with_frames_removed'],
-	[13, 92.03, 1.15, '<module>'],
-	[1, 93.23, 6.0, '<module> (mc.py:3)'],
-	[2, 93.23, 6.0, '_handle_fromlist'],
-	[3, 93.23, 6.0, '__getattr__'],
-	[4, 93.23, 6.0, 'import_module'],
-	[5, 93.23, 6.0, '_gcd_import'],
-	[6, 93.23, 6.0, '_find_and_load'],
-	[7, 93.23, 6.0, '_find_and_load_unlocked'],
-	[8, 93.23, 6.0, '_load_unlocked'],
-	[9, 93.23, 6.0, 'exec_module'],
-	[10, 93.23, 6.0, '_call_with_frames_removed'],
-	[11, 93.23, 6.0, '<module>'],
-	[12, 93.23, 6.0, '_find_and_load'],
-	[13, 93.23, 6.0, '_find_and_load_unlocked'],
-];
-
-const rows = Math.max(...blocks.map(([depth]) => depth)) + 1;
-const initial = blocks.find(([, , , name]) => name === '<module> (mc.py:15)')!;
-// Narrower blocks carry no name, which would show only as a letter or two; tapping one still shows it.
-const LABELLED = 5;
-const percent = (width: number) => `${Math.round(width)}%`;
+// The graph is py-spy's own file, cut to its top 20 rows (the import of scipy alone runs some 90 deep).
+// It carries its own script and global styles, so it sits in an <iframe>, which keeps both out of the page.
+// Its script lays the frames out again to the width it is given, keeping the text at 12px, so it reads in
+// the column as it is, and a tap on a frame widens that frame as it does in py-spy's file.
+// From `public/`, because the dev server answers a page load of a file under `src/` with its 404 page.
+const flameGraph = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/figures/mc-flamegraph.svg`;
+const title = 'py-spy 為上例的 Python 版本畫出的火焰圖：最寬的是 mc.py 第 15 行，約佔四分之三，其下是 NumPy 的函數；右側一叢窄而深的區塊是載入 scipy';
 ---
 
-<FigureFrame
-	class="flame"
-	style={`--rows: ${rows}`}
-	label="Flame graph of the Python simulation: each block's width is its share of the run time, and the blocks under it are the functions it called"
->
-	<div class="graph">
-		{
-			blocks.map(([depth, left, width, name]) => (
-				<button
-					type="button"
-					class="block"
-					style={`--depth: ${depth}; left: ${left}%; width: ${width}%`}
-					data-name={name}
-					data-share={percent(width)}
-					aria-pressed={name === initial[3] && depth === initial[0] ? 'true' : 'false'}
-					aria-label={`${name} ${percent(width)}`}
-				>
-					{width >= LABELLED && name}
-				</button>
-			))
-		}
-	</div>
-
-	<p class="result" aria-live="polite">
-		<strong data-out="share">{percent(initial[2])}</strong>
-		<span data-out="name">{initial[3]}</span>
-	</p>
-</FigureFrame>
+<figure class="flame">
+	<iframe src={flameGraph} title={title} loading="lazy"></iframe>
+</figure>
 
 <style>
-	.graph {
-		--row: 1.15rem;
-		position: relative;
-		height: calc(var(--rows) * var(--row));
-		border-bottom: 1px solid var(--rule);
+	.flame {
+		margin-inline: 0;
 	}
-	/* Laid out from the data, so a block's place and size come from its custom properties alone. */
-	.block {
-		position: absolute;
-		top: calc(var(--depth) * var(--row));
-		height: calc(var(--row) - 1px);
-		overflow: hidden;
-		padding: 0 0.25rem;
+	/* The file is drawn 380 units high and keeps that height at any width. */
+	.flame iframe {
+		display: block;
+		width: 100%;
+		height: 380px;
 		border: 0;
-		border-radius: 0;
-		box-shadow: inset -1px 0 var(--paper);
-		background: var(--tint-accent-strong);
-		color: var(--ink);
-		font-family: var(--font-code), monospace;
-		font-size: 0.68rem;
-		line-height: var(--row);
-		text-align: left;
-		white-space: nowrap;
-		text-overflow: ellipsis;
-		cursor: pointer;
-	}
-	.block:hover {
-		background: color-mix(in srgb, var(--accent) 40%, transparent);
-	}
-	.block[aria-pressed='true'] {
-		background: var(--accent);
-		color: var(--paper);
-	}
-	.block:focus-visible {
-		outline: 2px solid var(--ink);
-		outline-offset: -2px;
-	}
-	.result {
-		display: flex;
-		align-items: baseline;
-		gap: 0.75rem;
-		margin: 0.5rem 0 0;
-		color: var(--muted);
-	}
-	.result span {
-		overflow-wrap: anywhere;
-		font-family: var(--font-code), monospace;
-		font-size: 0.85rem;
 	}
 </style>
-
-<script>
-	for (const figure of document.querySelectorAll<HTMLElement>('.flame')) {
-		// The `!` are safe: the markup above holds both outputs.
-		const share = figure.querySelector<HTMLElement>('[data-out="share"]')!;
-		const name = figure.querySelector<HTMLElement>('[data-out="name"]')!;
-		const blocks = figure.querySelectorAll<HTMLButtonElement>('.block');
-
-		const select = (block: HTMLButtonElement) => {
-			for (const other of blocks) other.setAttribute('aria-pressed', String(other === block));
-			share.textContent = block.dataset.share!;
-			name.textContent = block.dataset.name!;
-		};
-
-		for (const block of blocks) {
-			block.addEventListener('click', () => select(block));
-			block.addEventListener('mouseenter', () => select(block));
-			block.addEventListener('focus', () => select(block));
-		}
-	}
-</script>
