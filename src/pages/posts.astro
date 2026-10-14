@@ -30,7 +30,7 @@ for (const entry of posts) {
 					<h2 class="heading">系列</h2>
 					<ul class="series">
 						{allSeries.map((series) => (
-							<li>
+							<li data-tone={series.tone}>
 								<a href={routes.series(series.key)}>{series.name}</a>
 								<span class="count">共 {series.episodes.length} 篇</span>
 							</li>
