@@ -1,0 +1,187 @@
+---
+import FigureFrame from './FigureFrame.astro';
+
+interface Profile {
+	lang: string;
+	name: string;
+	// Percent of the samples taken while each line ran, keyed by line number; lines left out took under 1%.
+	shares: Record<number, number>;
+	code: string;
+}
+
+// Measured with `Rprof(line.profiling = TRUE)` and with `py-spy record`, two runs each, averaged and rounded.
+const profiles: Profile[] = [
+	{
+		lang: 'r',
+		name: 'R',
+		shares: { 10: 2, 13: 85, 15: 4, 16: 4, 18: 5 },
+		code: `set.seed(1)
+n_sim <- 2000
+n <- 30
+B <- 500
+true_mean <- 1
+
+results <- data.frame()
+for (sim in 1:n_sim) {
+  x <- rexp(n, rate = 1 / true_mean)
+  ci <- t.test(x)$conf.int
+  boot <- numeric(B)
+  for (b in 1:B) {
+    boot[b] <- mean(sample(x, n, replace = TRUE))
+  }
+  b_ci <- quantile(boot, c(0.025, 0.975))
+  row <- data.frame(t = ci[1] < true_mean & true_mean < ci[2],
+                    boot = b_ci[1] < true_mean & true_mean < b_ci[2])
+  results <- rbind(results, row)
+}
+
+print(colMeans(results))`,
+	},
+	{
+		lang: 'python',
+		name: 'Python',
+		shares: { 1: 1, 2: 1, 3: 6, 12: 8, 15: 75, 16: 2, 17: 3, 18: 3 },
+		code: `import numpy as np
+import pandas as pd
+from scipy import stats
+
+rng = np.random.default_rng(1)
+n_sim, n, B = 2000, 30, 500
+true_mean = 1.0
+
+results = pd.DataFrame()
+for sim in range(n_sim):
+    x = rng.exponential(true_mean, size=n)
+    lo, hi = stats.t.interval(0.95, n - 1, loc=x.mean(), scale=stats.sem(x))
+    boot = np.empty(B)
+    for b in range(B):
+        boot[b] = rng.choice(x, size=n).mean()
+    b_lo, b_hi = np.percentile(boot, [2.5, 97.5])
+    row = pd.DataFrame({"t": [lo < true_mean < hi], "boot": [b_lo < true_mean < b_hi]})
+    results = pd.concat([results, row])
+
+print(results.mean())`,
+	},
+];
+
+const hottest = (shares: Record<number, number>) =>
+	Object.entries(shares).reduce((top, entry) => (entry[1] > top[1] ? entry : top));
+---
+
+<FigureFrame
+	class="line-profile"
+	label="Line profile of a Monte Carlo simulation: the share of run time spent on each line, in R and in Python"
+>
+	<div class="actions" role="group" aria-label="Language">
+		{
+			profiles.map((profile, i) => (
+				<button type="button" data-lang={profile.lang} aria-pressed={i === 0 ? 'true' : 'false'}>
+					{profile.name}
+				</button>
+			))
+		}
+	</div>
+
+	{
+		profiles.map((profile, i) => {
+			const [line, share] = hottest(profile.shares);
+			return (
+				<div class="panel" data-panel={profile.lang} hidden={i !== 0}>
+					<div class="lines">
+						{profile.code.split('\n').map((text, j) => {
+							const share = profile.shares[j + 1] ?? 0;
+							return (
+								<div class="row">
+									<span class="gauge">
+										<span class="no">{j + 1}</span>
+										<span class="track">
+											<span class="fill" style={`width: ${share}%`} />
+										</span>
+										<output>{share > 0 ? share : ''}</output>
+									</span>
+									<span class="src">{text}</span>
+								</div>
+							);
+						})}
+					</div>
+					<p class="result">
+						<strong>{share}%</strong>
+						<span>line {line}</span>
+					</p>
+				</div>
+			);
+		})
+	}
+</FigureFrame>
+
+<style>
+	/* One scroller for every row, so a long line pushes the code sideways while the gauges stay put. */
+	.lines {
+		overflow-x: auto;
+		border-block: 1px solid var(--rule);
+		padding-block: 0.4rem;
+	}
+	.row {
+		display: flex;
+		width: max-content;
+		min-width: 100%;
+		align-items: center;
+		line-height: 1.6;
+	}
+	.gauge {
+		position: sticky;
+		left: 0;
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: 0.5rem;
+		padding-right: 0.75rem;
+		background: var(--paper);
+	}
+	.no {
+		min-width: 2ch;
+		color: var(--muted);
+		font-variant-numeric: tabular-nums;
+		text-align: right;
+	}
+	.track {
+		width: 3rem;
+		height: 0.7rem;
+		background: var(--tint-muted);
+	}
+	.fill {
+		display: block;
+		height: 100%;
+		background: var(--accent);
+	}
+	.gauge output {
+		font-weight: 600;
+	}
+	.src {
+		font-family: var(--font-code), monospace;
+		font-size: 0.78rem;
+		white-space: pre;
+		color: var(--ink);
+	}
+	.result {
+		display: flex;
+		align-items: baseline;
+		gap: 0.75rem;
+		margin: 0.5rem 0 0;
+		color: var(--muted);
+	}
+</style>
+
+<script>
+	for (const figure of document.querySelectorAll<HTMLElement>('.line-profile')) {
+		const buttons = figure.querySelectorAll<HTMLButtonElement>('[data-lang]');
+		for (const button of buttons) {
+			button.addEventListener('click', () => {
+				for (const other of buttons) other.setAttribute('aria-pressed', String(other === button));
+				for (const panel of figure.querySelectorAll<HTMLElement>('[data-panel]')) {
+					panel.hidden = panel.dataset.panel !== button.dataset.lang;
+				}
+			});
+		}
+	}
+</script>

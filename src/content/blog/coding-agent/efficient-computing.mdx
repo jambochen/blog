@@ -8,6 +8,8 @@ seriesOrder: 8
 import Diagram from '../../../components/Diagram.astro';
 import GrowingVector from '../../../components/GrowingVector.astro';
 import ParallelRace from '../../../components/ParallelRace.astro';
+import FlameGraph from '../../../components/FlameGraph.astro';
+import LineProfile from '../../../components/LineProfile.astro';
 import SpeedupLimit from '../../../components/SpeedupLimit.astro';
 import loopVsVectorized from './img/loop-vs-vectorized.svg?raw';
 import growingVectorTiming from './img/growing-vector-timing.svg?raw';
@@ -22,14 +24,50 @@ import summationOrder from './img/summation-order.html?raw';
 
 ## 熱點分析
 
-一份分析的耗時通常集中在少數幾段，其餘加起來不過幾秒，耗時集中的這幾段稱為熱點（hotspot）。改寫之前如果不先量測，容易把工夫花在本來就快的部分，code 變得難讀，總耗時卻幾乎不變。量測可以交給 agent：
+一份分析的耗時通常集中在少數幾段，其餘加起來不過幾秒，耗時集中的這幾段稱為熱點（hotspot）。改寫之前如果不先量測，容易把工夫花在本來就快的部分，code 變得難讀，總耗時卻幾乎不變。
+
+### Profiler 的原理
+
+分段計時須在腳本裡插入計時的 code，也只量得到事先劃好的幾段。Profiler 是另一種量測工具，它在 code 執行期間每隔一段時間記下當下正在執行哪一行，好比監考老師每隔幾分鐘看一眼某位考生正在寫第幾題，看過幾十次之後，他在哪一題停留最久便看得出來，不必在他每題開始與結束時按碼錶。這種做法稱為取樣（sampling），腳本本身不必改動，量測也幾乎不拖慢 code。
+
+以一個 Monte Carlo 模擬為例：從指數分布抽 30 筆樣本，比較 t 區間與 bootstrap 百分位區間的覆蓋率，重複兩千次，每次 bootstrap 五百次。以 profiler 執行一次，各行所佔的時間如下：
+
+<LineProfile />
+
+時間幾乎都花在 bootstrap 的內圈，也就是每次重抽樣本求平均的那一行，R 佔八成五，Python 佔七成五；看起來較繁重的 `t.test()`，以及每次重複都把結果接上資料框的那一行，加起來不到一成。這一行改成一次抽出全部的 bootstrap 樣本之後，R 的耗時由 5.2 秒降為 1.2 秒，Python 由 7.4 秒降為 1.6 秒，覆蓋率都與改寫前相同，這種改寫方式見下文的[[#向量化]]一節。
+
+R 內建的 `Rprof()` 就是取樣式的 profiler，RStudio 的 Profile 選單也以它為基礎，結果以互動的圖呈現。Python 內建的 `cProfile` 則是在每個函數進出時記錄，只記到函數，看不出函數裡哪一行最慢，函數呼叫極多時還會拖慢執行，上例在 `cProfile` 之下由 6.6 秒變成 12.3 秒；它也只量主行程，平行運算時 worker 裡的計算量不到。Python 的腳本因此改用 py-spy 量測。
+
+### py-spy
+
+py-spy 是一個獨立的工具，從外部讀取 Python 行程的記憶體，因此不必修改腳本，也不必裝進專案的環境，Windows、macOS 與 Linux 都能使用，請 agent 以 `uv tool install py-spy` 安裝即可，`uv` 見[[整理專案#Python：uv]]一節。
+
+`py-spy record` 從頭執行一支腳本並全程取樣，結束後寫出結果檔，預設是一張火焰圖（flame graph），以瀏覽器開啟，區塊越寬佔用的時間越多；指定輸出純文字時，每一行是一條呼叫路徑與它的取樣數，agent 讀的是這一種。`py-spy top` 以類似工作管理員的畫面即時列出最耗時的函數。`py-spy dump` 印出一個執行中的行程此刻停在哪一行，已經跑了數小時的模擬不必停下來重跑，便能知道它卡在哪裡。
+
+上例的 Python 版本以 `py-spy record` 畫出的火焰圖簡化如下，實際打開的圖顏色更雜，層數也更多：
+
+<FlameGraph />
+
+火焰圖最上面一條是整支腳本，往下每一層是上一層呼叫的函數，例如 `<module> (mc.py:15)` 之下是第 15 行用到的 NumPy 函數；每個區塊的寬度是它所佔的時間比例，左右的先後依名稱排列，與執行的先後無關，顏色也沒有意義。名稱太長時區塊上只顯示一部分，滑鼠移到區塊上會顯示全名與比例，點一下則把該區塊放大到整個寬度。上例右側那一叢又窄又深的區塊是載入 scipy，層數雖多卻不寬，因此不是熱點，熱點只看區塊的寬度。
+
+與本篇有關的選項之一是 `--subprocesses`，連同 worker 一起取樣，可以確認平行版本的每個 worker 都在計算，見下文的[[#沒有報錯也沒有變快]]一節；另一個是 `--native`，連同 NumPy 這類以 C 寫成的底層一起取樣，看得出時間花在 NumPy 的哪一個運算，只支援 Windows 與 Linux。macOS 上執行 py-spy 一律須系統管理員權限，Linux 上接上已在執行的行程時也須。
+
+量測可以交給 agent：
 
 ```text
-執行這個專案的主要腳本並分段計時，列出各段的耗時，由長到短排列。
-先不要修改任何檔案。
+以 profiler 執行這個專案的主要腳本，R 用 Rprof() 並開啟逐行記錄，
+Python 用 py-spy record 並輸出純文字，列出最耗時的幾行與各自所佔的比例，
+由長到短排列。先不要修改任何檔案。
 ```
 
-此後只處理排在最前面的一兩段。這一次的計時也是日後比較的基準。完整執行一次如果須數小時，先請 agent 以縮小的資料或較少的重複次數量測，各段所佔的比例大致不變。
+已經在執行的 Python 腳本可以這樣查看：
+
+```text
+這個 Python 腳本正在執行，用 py-spy dump 查看它目前停在哪裡，
+每隔一分鐘看一次，共看三次，告訴我時間主要花在哪一段。
+```
+
+此後只處理排在最前面的一兩處。這一次的計時也是日後比較的基準。完整執行一次如果須數小時，先請 agent 以縮小的資料或較少的重複次數量測，各處所佔的比例大致不變。
 
 ## 向量化
 
@@ -323,7 +361,7 @@ Agent 沿用專案裡既有的逐筆迴圈時並不會提醒使用者這一段�
 ```markdown
 ## 計算效率
 
-- 改寫 code 以求加快之前，先分段計時，只改最耗時的部分；改寫前後各計時一次，並比對結果是否相同。
+- 改寫 code 以求加快之前，先以 profiler（R 的 `Rprof()`、Python 的 py-spy）或分段計時找出最耗時的部分，只改這一部分；改寫前後各計時一次，並比對結果是否相同。
 - 對整批資料做同樣的運算時，用向量化的寫法（R 的向量與矩陣運算、Python 的 NumPy 與 pandas），不逐筆跑迴圈。
 - 不在迴圈裡逐次加長向量、陣列或資料表：知道最終大小或上限時先建立完整長度再填入，不知道時先收集、最後合併一次。
 - 遇到彼此獨立的重複計算（對多個檔案或多組參數做同樣的處理、重複多次的模擬），且單次耗時明顯時，先提議平行化並說明預期效益與成本，等我同意後再改寫；不值得平行化時也請說明理由。
