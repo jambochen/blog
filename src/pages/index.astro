@@ -6,6 +6,7 @@ import { getCatalogue } from '../lib/siteCatalogue';
 import { routes } from '../lib/siteRoutes';
 import { transitionNames } from '../lib/transitionNames';
 
+const SERIES_COUNT = 5;
 const STANDALONE_COUNT = 8;
 
 const { posts, series: allSeries, standalone } = await getCatalogue();
@@ -23,6 +24,7 @@ const { posts, series: allSeries, standalone } = await getCatalogue();
 					posts={series.episodes}
 					tone={series.tone}
 					transitionName={transitionNames.series(series.key)}
+					limit={SERIES_COUNT}
 				/>
 			))
 		}

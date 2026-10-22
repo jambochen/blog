@@ -11,9 +11,12 @@ interface Props {
 	posts: SiteEntry[];
 	tone?: Tone;
 	transitionName?: string;
+	/** Rows shown before the rest are left to the page at `href`. */
+	limit?: number;
 }
 
-const { name, href, posts, tone, transitionName } = Astro.props;
+const { name, href, posts, tone, transitionName, limit = posts.length } = Astro.props;
+const shown = posts.slice(0, limit);
 ---
 
 <section class="shelf" data-tone={tone}>
@@ -23,7 +26,7 @@ const { name, href, posts, tone, transitionName } = Astro.props;
 	</h2>
 	<ol>
 		{
-			posts.map(({ id, post, placement }) => (
+			shown.map(({ id, post, placement }) => (
 				<li>
 					<a href={routes.post(id)}>
 						{placement ? (
@@ -38,6 +41,13 @@ const { name, href, posts, tone, transitionName } = Astro.props;
 					</a>
 				</li>
 			))
+		}
+		{
+			shown.length < posts.length && (
+				<li class="more">
+					<a href={href}>看全部 {posts.length} 篇</a>
+				</li>
+			)
 		}
 	</ol>
 </section>
@@ -123,6 +133,12 @@ const { name, href, posts, tone, transitionName } = Astro.props;
 		line-height: 1.6;
 		opacity: 0.85;
 	}
+	/* Without a number or date, the link starts where the titles do. */
+	.more a {
+		grid-template-columns: minmax(0, 1fr);
+		padding-left: calc(1.1rem + 2.75rem + 0.5rem);
+		font-size: 0.85rem;
+	}
 	li a:hover,
 	li a:focus-visible {
 		background: var(--block-ink);
@@ -176,6 +192,9 @@ const { name, href, posts, tone, transitionName } = Astro.props;
 		.description {
 			grid-column: 3;
 			margin: 0;
+		}
+		.more a {
+			padding-left: calc(1.5rem + 3.25rem + 1rem);
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
