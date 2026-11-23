@@ -20,3 +20,8 @@ export const CONTACT_LINKS = [
 		href: 'https://www.linkedin.com/in/%E6%94%BF%E5%8D%9A-%E9%99%B3-999506267/',
 	},
 ];
+
+export const FRIEND_LINKS: { name: string; href: string }[] = [
+	{ name: "Kno's Page", href: 'https://faculty.ndhu.edu.tw/~chtsao/' },
+	{ name: '圓州率', href: 'https://jinzhou.netlify.app/' },
+];

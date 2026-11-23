@@ -3,7 +3,7 @@ import { Image } from 'astro:assets';
 import { Icon } from 'astro-icon/components';
 import avatar from '../assets/avatar.jpg';
 import RainWalk from '../components/RainWalk.astro';
-import { CONTACT_LINKS, SITE_TITLE } from '../consts';
+import { CONTACT_LINKS, FRIEND_LINKS, SITE_TITLE } from '../consts';
 import Base from '../layouts/Base.astro';
 ---
 
@@ -34,6 +34,22 @@ import Base from '../layouts/Base.astro';
 				</ul>
 			</div>
 		</section>
+		<section class="sheet friends" aria-labelledby="friends">
+			<h2 id="friends">友站連結</h2>
+			<div class="body">
+				{FRIEND_LINKS.length ? (
+					<ul>
+						{FRIEND_LINKS.map(({ name, href }) => (
+							<li><a href={href}>
+								<Icon name="mdi:arrow-top-right" />
+								<span class="text">{name}</span>
+								<span class="note">{new URL(href).hostname}</span>
+							</a></li>
+						))}
+					</ul>
+				) : <p class="empty">目前還沒有收錄的友站。</p>}
+			</div>
+		</section>
 		<RainWalk />
 	</div>
 </Base>
@@ -41,6 +57,29 @@ import Base from '../layouts/Base.astro';
 <style>
 	.sheet {
 		border-block: 0.3rem solid var(--ink);
+	}
+	.friends {
+		margin-top: 2rem;
+	}
+	.friends h2 {
+		margin: 0;
+		padding-block: 1rem;
+		font: 900 1.563rem/1.45 var(--font-mincho);
+	}
+	.friends .body,
+	.friends ul,
+	.friends li {
+		display: grid;
+	}
+	.friends a {
+		transition: none;
+		overflow-wrap: anywhere;
+	}
+	.empty {
+		margin: 0;
+		padding: 1rem 0;
+		border-top: 1px solid var(--rule);
+		color: var(--muted);
 	}
 	header {
 		display: flex;
@@ -128,6 +167,13 @@ import Base from '../layouts/Base.astro';
 	}
 
 	@media (min-width: 52rem) {
+		.friends li:first-child {
+			border-top: 0;
+		}
+		.empty {
+			padding-inline: 1.5rem;
+			border-top: 0;
+		}
 		.sheet {
 			display: grid;
 			grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
