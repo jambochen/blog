@@ -12,7 +12,7 @@ interface Props {
 	card?: string;
 }
 
-const { title, description, wallpaper = 'terrain', card } = Astro.props;
+const { title, description, wallpaper, card } = Astro.props;
 ---
 
 <!doctype html>
@@ -22,7 +22,7 @@ const { title, description, wallpaper = 'terrain', card } = Astro.props;
 		<slot name="head" />
 	</head>
 	<body>
-		<Wallpaper scene={wallpaper} />
+		{wallpaper && <Wallpaper scene={wallpaper} />}
 		<Header />
 		<main>
 			<slot />
